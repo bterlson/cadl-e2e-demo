@@ -1,0 +1,18 @@
+{
+  "name": "cadl-azure-api-management",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cadl-lang/compiler": "^0.32.0"
+  },
+  "devDependencies": {
+    "typescript": "~4.7.4"
+  }
+}

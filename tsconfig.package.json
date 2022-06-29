@@ -1,0 +1,11 @@
+{
+  // for pkg in `< rush.json | npx strip-json-comments-cli | jq '.projects[].projectFolder'`; do
+  //   cp tsconfig.package.json $pkg/tsconfig.json;
+  // done
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    "outDir": "./dist"
+  },
+  "include": ["./src/**/*.ts"]
+}

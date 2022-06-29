@@ -1,0 +1,26 @@
+{
+  "name": "cadl-use",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "bin": {
+    "cadl-use": "./bin.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@cadl-lang/compiler": "^0.32.0",
+    "@cadl-lang/rest": "^0.15.0",
+    "@types/prettier": "^2.6.3",
+    "cadl-azure-auth": "workspace:cadl-azure-auth",
+    "prettier": "^2.7.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^4.7.4"
+  }
+}

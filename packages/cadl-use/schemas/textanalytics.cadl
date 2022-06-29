@@ -1,0 +1,193 @@
+import "cadl-azure-auth";
+import "@cadl-lang/rest";
+
+using Azure.Auth;
+using Cadl.Rest;
+using Cadl.Http;
+
+@apiKey("Ocp-Apim-Subscription-Key")
+@scope("https://cognitiveservices.azure.com/.default")
+@route("/text/analytics/v3.1")
+namespace Azure.AI.TextAnalytics;
+
+model SentimentResponse {
+    documents: DocumentSentimentItem[];
+    errors: DocumentError[];
+    statistics?: RequestStatistics;
+    modelVersion: string;
+}
+
+model DocumentError {
+    id: string,
+    error: TextAnalyticsError
+}
+
+model DocumentSentimentItem {
+    id: string;
+    sentiment: DocumentSentiment;
+    statistics?: DocumentStatistics;
+    confidenceScores: SentimentConfidenceScorePerLabel;
+    sentences: SentenceSentimentItem[],
+    warnings: TextAnalyticsWarning[]
+}
+
+model TextAnalyticsWarning {
+    code: WarningCode;
+    message: string,
+    targetRef?: string
+}
+
+enum WarningCode {
+    LongWordsInDocument,
+    DocumentTruncated
+}
+
+enum DocumentSentiment {
+    Positive: "positive",
+    Neutral: "neutral",
+    Negative: "negative",
+    Mixed: "mixed"
+}
+
+model RequestStatistics {
+    documentsCount: uint32;
+    validDocumentsCount: uint32;
+    erroneousDocumentsCount: uint32;
+    transactionsCount: uint64;
+}
+
+model DocumentStatistics {
+    charactersCount: uint32;
+    transactionsCount: uint32;
+}
+
+model SentimentConfidenceScorePerLabel {
+    positive: float64,
+    neutral: float64;
+    negative: float64
+}
+
+model SentenceSentimentItem {
+    text: string,
+    sentiment: SentenceSentiment;
+    confidenceScores: SentimentConfidenceScorePerLabel;
+    offset: uint32;
+    length: uint32;
+    targets?: SentenceTarget[],
+    assessements?: SentenceAssessment[]
+}
+
+enum SentenceSentiment {
+    Positive: "positive",
+    Mixed: "mixed",
+    Negative: "negative",
+}
+
+model SentenceTarget {
+    sentiment: TokenSentiment,
+    confidenceScores: TargetConfidenceScoreLabel,
+    offset: uint32,
+    length: uint32,
+    text: string,
+    relations: TargetRelation[]
+}
+
+
+model SentenceAssessment {
+    sentiment: TokenSentiment;
+    confidenceScores: TargetConfidenceScoreLabel;
+    offset: uint32;
+    length: uint32;
+    text: string;
+    isNegated: boolean;
+}
+
+enum TokenSentiment {
+    Positive: "positive",
+    Mixed: "mixed",
+    Negative: "negative",
+}
+
+model TargetRelation {
+    ref: string;
+    relationType: "assessment" | "target"
+}
+
+model TargetConfidenceScoreLabel {
+    positive: float64;
+    negative: float64
+}
+
+model ErrorResponse {
+    @statusCode code: 400 | 404 | 403 | 500;
+    @body body: { error: TextAnalyticsError },
+}
+
+model TextAnalyticsError {
+    code: ErrorCode,
+    message: string,
+    target?: string,
+    innererror?: InnerError,
+    details?: TextAnalyticsError[]
+}
+
+model InnerError {
+    code: InnerErrorCode,
+    message: string,
+    details?: Map<string, string>,
+    target?: string,
+    innererror?: InnerError
+}
+
+enum ErrorCode {
+    InvalidRequest,
+    InvalidArgument,
+    InternalServerError,
+    ServiceUnavailable,
+    NotFound
+}
+
+enum InnerErrorCode {
+    InvalidParameterValue,
+    InvalidRequestBodyFormat,
+    EmptyRequest,
+    MissingInputRecords,
+    InvalidDocument,
+    ModelVersionIncorrect,
+    InvalidDocumentBatch,
+    UnsupportedLanguageCode,
+    InvalidCountryHint
+}
+
+model CommonParameters {
+    @query "model-version"?: string;
+    @query showStats?: boolean;
+    @query stringIndexType?: StringIndexType;
+    @query loggingOptOut?: boolean;
+    @body batch: MultiLanguageBatchInput;
+}
+
+enum StringIndexType {
+    TextElement_v8,
+    UnicodeCodePoint,
+    Utf16CodeUnit
+}
+
+model MultiLanguageBatchInput {
+    documents: MultiLanguageInput[],
+}
+
+model MultiLanguageInput {
+    id: string,
+    text: string,
+    @format("ISO 639-1")
+    language?: string
+}
+
+@route("/sentiment")
+namespace Sentiment {
+    @post op analyzeSentiment(
+        ...CommonParameters,
+        @query opinionMining?: boolean
+    ): OkResponse<SentimentResponse> | ErrorResponse;
+}

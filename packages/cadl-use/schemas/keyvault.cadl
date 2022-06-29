@@ -1,0 +1,73 @@
+import "@cadl-lang/rest";
+import "cadl-azure-auth";
+
+@Azure.Auth.scope("https://vault.azure.net/.default")
+namespace Microsoft.KeyVault;
+
+using Cadl.Http;
+using Cadl.Rest;
+
+model ApiVersion {
+  @query "api-version": "7.3";
+}
+
+model KeyVaultRequest {
+  ...ApiVersion;
+}
+
+model KeyVaultBodyRequest<TBody> extends KeyVaultRequest {
+  @body body: TBody;
+}
+
+model KeyVaultSuccessResponse<T> {
+  @statusCode code: 200;
+  @body body: T;
+}
+
+model KeyVaultErrorResponse {
+  @statusCode code: 400 | 403 | 404 | 500;
+  @body body: KeyVaultErrorResponseBody;
+}
+
+model KeyVaultErrorResponseBody {
+  error: KeyVaultError | null;
+}
+
+model KeyVaultError {
+  code?: string;
+  message?: string;
+  innererror?: KeyVaultError | null;
+}
+
+alias KeyVaultResponse<T = {}> = KeyVaultSuccessResponse<T> | KeyVaultErrorResponse;
+
+@route("/secrets")
+namespace Secrets {
+  @put op setSecret(
+    @path name: string,
+    ...KeyVaultBodyRequest<{
+      value: string;
+      contentType?: string;
+      tags?: Map<string, string>;
+    }>
+  ): KeyVaultResponse<SecretValue>;
+
+  @get op getSecret(
+    @path name: string,
+    @path version?: string,
+    ...KeyVaultRequest
+  ): KeyVaultResponse<SecretValue>;
+
+  model SecretItem {
+    id?: string;
+    contentType?: string;
+    tags?: Map<string, string>;
+    @visibility("read") kid?: string;
+    @visibility("read") managed?: boolean;
+  }
+
+  model SecretValue {
+    value?: string;
+    ...SecretItem;
+  }
+}
