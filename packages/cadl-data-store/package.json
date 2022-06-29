@@ -1,0 +1,27 @@
+{
+  "name": "cadl-data-store",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/src/index.js",
+  "cadlMain": "dist/src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -p ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@azure/cosmos": "^3.16.1",
+    "@cadl-lang/compiler": "latest",
+    "@cadl-lang/rest": "latest",
+    "@types/node": "^18.0.0",
+    "dotenv": "^16.0.1",
+    "prettier": "^2.7.1"
+  },
+  "devDependencies": {
+    "@types/prettier": "^2.6.3",
+    "typescript": "^4.7.4"
+  },
+  "type": "module"
+}

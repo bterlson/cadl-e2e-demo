@@ -7,5 +7,5 @@
     "tsBuildInfoFile": "./dist/.tsbuildinfo",
     "outDir": "./dist"
   },
-  "include": ["./src/**/*.ts"]
+  "include": ["./src/**/*.ts", "./sample/**/*.ts"]
 }

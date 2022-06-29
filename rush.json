@@ -124,7 +124,7 @@
    * LTS schedule: https://nodejs.org/en/about/releases/
    * LTS versions: https://nodejs.org/en/download/releases/
    */
-  "nodeSupportedVersionRange": ">=12.13.0 <13.0.0 || >=14.15.0 <15.0.0 || >=16.13.0 <17.0.0",
+  "nodeSupportedVersionRange": ">=14.15.0 <15.0.0 || >=16.13.0 <18.0.0",
 
   /**
    * Odd-numbered major versions of Node.js are experimental.  Even-numbered releases
@@ -137,7 +137,7 @@
    * pre-LTS versions in preparation for supporting the first LTS version, you can use this setting
    * to disable Rush's warning.
    */
-  // "suppressNodeLtsWarning": false,
+  "suppressNodeLtsWarning": false,
 
   /**
    * If you would like the version specifiers for your dependencies to be consistent, then
@@ -412,8 +412,8 @@
       "shouldPublish": false
     },
     {
-      "packageName": "cadl-azure-storage",
-      "projectFolder": "packages/cadl-azure-storage",
+      "packageName": "cadl-data-store",
+      "projectFolder": "packages/cadl-data-store",
       "shouldPublish": false
     },
     {

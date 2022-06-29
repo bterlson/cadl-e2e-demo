@@ -1,0 +1,18 @@
+import "@cadl-lang/rest";
+import "cadl-data-store";
+
+namespace MyService;
+@store("dbName") model Widget {
+  name: string,
+  color: "red" | "blue";
+}
+
+@store("dbName") model Person {
+  @key id: string;
+  name: string;
+  age: int32;
+  favoriteSport: "baseball" | "football" | "soccer";
+}
+
+op getPerson(@Http.path id: string): Person;
+op createPerson(@Http.body person: Person): Person;
