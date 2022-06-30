@@ -9,5 +9,15 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@cadl-lang/compiler": "latest",
+    "@cadl-lang/rest": "latest",
+    "@types/node": "^18.0.0",
+    "dotenv": "^16.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^4.7.4"
+  },
+  "type": "module"
 }
