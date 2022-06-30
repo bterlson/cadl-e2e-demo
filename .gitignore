@@ -1,5 +1,6 @@
 dist/
 .env
+cadl-output/
 
 # Logs
 *.log
