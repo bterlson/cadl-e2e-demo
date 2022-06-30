@@ -10,12 +10,14 @@ importers:
       '@cadl-lang/compiler': latest
       '@cadl-lang/rest': latest
       '@types/node': ^18.0.0
+      cadl-data-store: workspace:*
       dotenv: ^16.0.1
       typescript: ^4.7.4
     dependencies:
       '@cadl-lang/compiler': 0.32.0
       '@cadl-lang/rest': 0.15.0_@cadl-lang+compiler@0.32.0
       '@types/node': 18.0.0
+      cadl-data-store: link:../packages/cadl-data-store
       dotenv: 16.0.1
     devDependencies:
       typescript: 4.7.4

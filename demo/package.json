@@ -14,6 +14,7 @@
     "@cadl-lang/compiler": "latest",
     "@cadl-lang/rest": "latest",
     "@types/node": "^18.0.0",
+    "cadl-data-store": "workspace:*",
     "dotenv": "^16.0.1"
   },
   "devDependencies": {
