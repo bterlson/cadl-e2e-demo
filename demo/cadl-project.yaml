@@ -1,0 +1,4 @@
+emitters:
+  'cadl-data-store': true
+  'cadl-azure-static-web-app': true
+  'cadl-azure-accelerators': true

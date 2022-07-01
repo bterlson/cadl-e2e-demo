@@ -407,8 +407,8 @@
       "shouldPublish": false
     },
     {
-      "packageName": "cadl-azure-static-sites",
-      "projectFolder": "packages/cadl-azure-static-sites",
+      "packageName": "cadl-azure-static-web-app",
+      "projectFolder": "packages/cadl-azure-static-web-app",
       "shouldPublish": false
     },
     {
@@ -419,6 +419,11 @@
     {
       "packageName": "cadl-use",
       "projectFolder": "packages/cadl-use",
+      "shouldPublish": false
+    },
+    {
+      "packageName": "cadl-azure-accelerators",
+      "projectFolder": "packages/cadl-azure-accelerators",
       "shouldPublish": false
     },
     {

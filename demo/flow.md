@@ -17,6 +17,7 @@ Checked means ready to demo.
 
 * [x] Initialize empty demo folder
 * [ ] Create azure.yml, defining a front-end and back-end.
+  * Should this be generated?
   * How should we do this? Paste it in? Use azd init somehow?
 * [ ] Create `app.cadl`:
   * [x] define a service namespace
