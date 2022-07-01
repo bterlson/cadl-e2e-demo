@@ -36,7 +36,7 @@ export async function $onEmit(p: Program) {
   const infraDir = path.join(p.compilerOptions.outputPath, "infra");
   await mkdir(infraDir, { recursive: true });
   for (const bicep of biceps) {
-    await writeFile(path.join(infraDir, bicep.name), bicep.contents);
+    await writeFile(path.join(infraDir, bicep.name + ".bicep"), bicep.contents);
   }
 
   await writeFile(path.join(infraDir, "main.parameters.json"), `
@@ -101,8 +101,8 @@ function importBiceps() {
   for (const bicep of biceps) {
     // todo: need to name these resources better.
     imports += `
-      module resources './${bicep.name}' = {
-        name: 'resources-\${resourceToken}'
+      module ${bicep.name} './${bicep.name}.bicep' = {
+        name: '${bicep.name}-\${resourceToken}'
         scope: resourceGroup
         params: {
           location: location

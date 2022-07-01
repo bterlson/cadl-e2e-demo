@@ -17,7 +17,8 @@
     "@cadl-lang/rest": "latest",
     "@types/node": "^18.0.0",
     "dotenv": "^16.0.1",
-    "prettier": "^2.7.1"
+    "prettier": "^2.7.1",
+    "cadl-azure-accelerators": "workspace:*"
   },
   "devDependencies": {
     "@types/prettier": "^2.6.3",

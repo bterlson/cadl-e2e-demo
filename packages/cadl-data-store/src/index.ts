@@ -14,6 +14,7 @@ import {
 import { DataStoreLibrary } from "./lib.js";
 import { mkdir, writeFile } from "fs/promises";
 import { format } from "prettier";
+import { addBicepFile } from "cadl-azure-accelerators";
 
 import * as path from "path";
 
@@ -60,6 +61,41 @@ export async function $onEmit(
   const outputDir = path.join(p.compilerOptions.outputPath, "store");
   const emitter = createTsEmitter(p, { outputDir });
   emitter.emit();
+
+  addBicepFile("cosmos", `
+  param location string
+  param principalId string = ''
+  param resourceToken string
+  param tags object
+  resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2021-04-15' = {
+    name: 'cosmos-\${resourceToken}'
+    kind: 'GlobalDocumentDB'
+    location: location
+    tags: tags
+    properties: {
+      consistencyPolicy: {
+        defaultConsistencyLevel: 'Session'
+      }
+      locations: [
+        {
+          locationName: location
+          failoverPriority: 0
+          isZoneRedundant: false
+        }
+      ]
+      databaseAccountOfferType: 'Standard'
+      enableAutomaticFailover: false
+      enableMultipleWriteLocations: false
+      capabilities: [
+        {
+          name: 'EnableServerless'
+        }
+      ]
+    }
+  }
+
+  output AZURE_COSMOS_CONNECTION_STRING_KEY string = 'AZURE-COSMOS-CONNECTION-STRING'
+`)
 }
 
 const instrinsicNameToTSType = new Map<string, string>([

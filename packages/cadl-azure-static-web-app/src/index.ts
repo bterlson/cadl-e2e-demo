@@ -44,7 +44,7 @@ export async function $onEmit(p: Program) {
     host: "staticwebapp"
   });
   addBicepFile(
-    "swa.bicep",
+    "swa",
     `
   param location string
   param principalId string = ''
@@ -68,6 +68,5 @@ export async function $onEmit(p: Program) {
   
   output WEB_URI string = 'https://\${web.properties.defaultHostname}'
   `
-  
   );
 }
