@@ -7,7 +7,7 @@ import {
 import path from "path";
 import { mkdir, writeFile } from "fs/promises";
 import "./lib.js";
-import {addBicepFile} from "cadl-azure-accelerators";
+import { addBicepFile, addService } from "cadl-azure-accelerators";
 const swaKey = Symbol();
 const swaDecorator = createDecoratorDefinition({
   name: "@AzureStaticWebApp",
@@ -38,7 +38,14 @@ export function $AzureStaticWebApp(
 
 export async function $onEmit(p: Program) {
   if (!p.compilerOptions.outputPath) return;
-  addBicepFile("swa.bicep", `
+  addService("web", {
+    project: "src/web",
+    language: "js",
+    host: "staticwebapp"
+  });
+  addBicepFile(
+    "swa.bicep",
+    `
   param location string
   param principalId string = ''
   param resourceToken string
@@ -57,5 +64,10 @@ export async function $onEmit(p: Program) {
     properties: {
       provider: 'Custom'
     }
-  }`)
+  }
+  
+  output WEB_URI string = 'https://\${web.properties.defaultHostname}'
+  `
+  
+  );
 }
