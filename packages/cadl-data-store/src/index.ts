@@ -14,7 +14,7 @@ import {
 import { DataStoreLibrary } from "./lib.js";
 import { mkdir, writeFile } from "fs/promises";
 import { format } from "prettier";
-import { addBicepFile } from "cadl-azure-accelerators";
+import { addBicepFile, addSecret } from "cadl-azure-accelerators";
 
 import * as path from "path";
 
@@ -94,8 +94,9 @@ export async function $onEmit(
     }
   }
 
-  output AZURE_COSMOS_CONNECTION_STRING_KEY string = 'AZURE-COSMOS-CONNECTION-STRING'
+  output cosmosConnectionStringValue string = cosmos.listConnectionStrings().connectionStrings[0].connectionString
 `)
+  addSecret("cosmosConnectionString", "cosmosConnectionStringValue", ["cosmos"]);
 }
 
 const instrinsicNameToTSType = new Map<string, string>([
