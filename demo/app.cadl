@@ -4,20 +4,14 @@ import "cadl-azure-static-web-app";
 
 namespace DemoApp {
   namespace API {
-    @store("dbName") model Widget {
-      name: string,
-      color: "red" | "blue";
-    }
-
-    @store("dbName") model Person {
+    @store("dbName") model Comment {
       @key id: string;
-      name: string;
-      age: int32;
-      favoriteSport: "baseball" | "football" | "soccer";
+      contents: string;
+      sentiment: string;
     }
 
-    op getPerson(@Http.path id: string): Person;
-    op createPerson(@Http.body person: Person): Person;
+    @Http.post op createComment(@Http.body comment: Comment): Person;
+    @Http.get op getComment(@Http.path id: Comment.id): Person;
   }
 
   @AzureStaticWebApp

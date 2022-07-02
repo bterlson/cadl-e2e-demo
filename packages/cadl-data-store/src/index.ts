@@ -198,8 +198,8 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     export class DataStore {
       private client: CosmosClient;
       ${getDataStorePublicFields()}
-      constructor(endpoint: string, key: string) {
-        this.client = new CosmosClient({endpoint, key});
+      constructor(connectionString: string) {
+        this.client = new CosmosClient(connectionString);
         ${getDataStoreConstructorCode()}
       }
     
