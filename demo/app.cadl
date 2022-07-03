@@ -4,14 +4,15 @@ import "cadl-azure-static-web-app";
 
 namespace DemoApp {
   namespace API {
-    @store("dbName") model Comment {
+    @store("dbName")
+    model Comment {
       @key id: string;
       contents: string;
       sentiment: string;
     }
 
-    @Http.post op createComment(@Http.body comment: Comment): Person;
-    @Http.get op getComment(@Http.path id: Comment.id): Person;
+    @Http.post op createComment(@Http.body comment: Comment): Comment;
+    @Http.get op getComment(@Http.path id: string): Comment;
   }
 
   @AzureStaticWebApp

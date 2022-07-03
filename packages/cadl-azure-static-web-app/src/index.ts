@@ -50,6 +50,7 @@ export async function $onEmit(p: Program) {
   param principalId string = ''
   param resourceToken string
   param tags object
+  param APPINSIGHTS_INSTRUMENTATIONKEY string = ''
   
   resource web 'Microsoft.Web/staticSites@2021-03-01' = {
     name: 'stapp-\${resourceToken}'
@@ -64,9 +65,16 @@ export async function $onEmit(p: Program) {
     properties: {
       provider: 'Custom'
     }
+    resource staticWebAppSettings 'config@2021-01-15' = {
+      name: 'appsettings'
+      properties: {
+        APPINSIGHTS_INSTRUMENTATIONKEY: APPINSIGHTS_INSTRUMENTATIONKEY
+      }
+    }
+  
   }
   
   output WEB_URI string = 'https://\${web.properties.defaultHostname}'
-  `
+  `, [{key: "APPINSIGHTS_INSTRUMENTATIONKEY", value: "appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY"}]
   );
 }
