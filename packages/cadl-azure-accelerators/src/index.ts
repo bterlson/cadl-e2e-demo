@@ -96,6 +96,9 @@ export async function $onEmit(p: Program) {
     }
 
     ${importBiceps()}
+
+    output AZURE_KEY_VAULT_ENDPOINT string = keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT
+    output APPINSIGHTS_INSTRUMENTATIONKEY string = appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY
 `)
 
   await writeFile(path.join(p.compilerOptions.outputPath, "azure.yaml"), azureYaml());
@@ -145,6 +148,8 @@ function keyvaultBicep() {
   
     ${keyvaultSecrets()}
   }
+
+  output AZURE_KEY_VAULT_ENDPOINT string = keyVault.properties.vaultUri
   `
 }
 

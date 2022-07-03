@@ -41,7 +41,7 @@ export async function $onEmit(p: Program) {
   addService("web", {
     project: "src/web",
     language: "js",
-    host: "staticwebapp"
+    host: "staticwebapp",
   });
   addBicepFile(
     "swa",
@@ -51,6 +51,7 @@ export async function $onEmit(p: Program) {
   param resourceToken string
   param tags object
   param APPINSIGHTS_INSTRUMENTATIONKEY string = ''
+  param AZURE_KEY_VAULT_ENDPOINT string = ''
   
   resource web 'Microsoft.Web/staticSites@2021-03-01' = {
     name: 'stapp-\${resourceToken}'
@@ -69,12 +70,23 @@ export async function $onEmit(p: Program) {
       name: 'appsettings'
       properties: {
         APPINSIGHTS_INSTRUMENTATIONKEY: APPINSIGHTS_INSTRUMENTATIONKEY
+        AZURE_KEY_VAULT_ENDPOINT: AZURE_KEY_VAULT_ENDPOINT
       }
     }
   
   }
   
   output WEB_URI string = 'https://\${web.properties.defaultHostname}'
-  `, [{key: "APPINSIGHTS_INSTRUMENTATIONKEY", value: "appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY"}]
+  `,
+    [
+      {
+        key: "APPINSIGHTS_INSTRUMENTATIONKEY",
+        value: "appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY",
+      },
+      {
+        key: "AZURE_KEY_VAULT_ENDPOINT",
+        value: "keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT",
+      },
+    ]
   );
 }
