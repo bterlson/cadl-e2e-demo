@@ -2,17 +2,24 @@ import "@cadl-lang/rest";
 import "cadl-data-store";
 import "cadl-azure-static-web-app";
 
+using Cadl.Http;
 namespace DemoApp {
   namespace API {
+
     @store("dbName")
     model Comment {
       @key id: string;
       contents: string;
-      sentiment: string;
+      @visibility("read") sentiment: string;
     }
 
-    @Http.post op createComment(@Http.body comment: Comment): Comment;
-    @Http.get op getComment(@Http.path id: string): Comment;
+    @withVisibility("write")
+    model CommentRequest {
+      ... Comment
+    };
+
+    @post op createComment(@body comment: CommentRequest): Comment;
+    @get op getComment(@path id: string): Comment;
   }
 
   @AzureStaticWebApp
