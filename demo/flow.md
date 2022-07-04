@@ -34,7 +34,6 @@ Checked means ready to demo.
 * [ ] Create `src/web/build/index.html`, import the generated client, and create a text area and submit button, add a click event handler that saves the comment in the text box.
 * [ ] Add a div above the text box, update the code to take the sentiment from the response and display it in the div.
 * [ ] Add a new field to the comment, createdBy, that takes a string. Regenerate code and show how we get errors for code we need to update.
-* [ ] Add import for `cadl-azure-monitor`, add `@AzureMonitor` decorator to service namespace.
 * [ ] Stretch: import `cadl-azure-api-management`, add `@APIM` to the service namespace, add `@APIM.IngressRule` to the create endpoint.
 * [ ] Run `cadl compile` again
 * [ ] Run `azd up`
