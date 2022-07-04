@@ -8,9 +8,14 @@ namespace DemoApp {
 
     @store("dbName")
     model Comment {
-      @key id: string;
+      @key
+      @visibility("read")
+      id: string;
+
       contents: string;
-      @visibility("read") sentiment: string;
+
+      @visibility("read")
+      sentiment: string;
     }
 
     @withVisibility("write")
