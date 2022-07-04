@@ -4,8 +4,6 @@ import {
   NamespaceType,
   Program,
 } from "@cadl-lang/compiler";
-import path from "path";
-import { mkdir, writeFile } from "fs/promises";
 import "./lib.js";
 import { addBicepFile, addService } from "cadl-azure-accelerators";
 const swaKey = Symbol();

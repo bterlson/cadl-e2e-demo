@@ -17,6 +17,7 @@
     "cadl-data-store": "workspace:*",
     "cadl-azure-static-web-app": "workspace:*",
     "cadl-azure-accelerators": "workspace:*",
+    "cadl-azure-functions": "workspace:*",
     "dotenv": "^16.0.1"
   },
   "devDependencies": {
