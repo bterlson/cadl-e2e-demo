@@ -1,5 +1,4 @@
 {
-  "generatedBy": "ezfunc",
   "bindings": [
     {
       "type": "httpTrigger",
@@ -11,7 +10,8 @@
     {
       "type": "http",
       "direction": "out",
-      "name": "res"
+      "name": "$return"
     }
-  ]
+  ],
+  "scriptFile": "../dist/catchAllFunction/index.js"
 }

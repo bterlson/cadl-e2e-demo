@@ -4,9 +4,17 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@azure/cosmos": "^3.16.2",
+    "@azure/functions": "^3.2.0",
+    "applicationinsights": "^2.3.3",
+    "typescript": "^4.7.4"
+  },
+  "type": "module"
 }

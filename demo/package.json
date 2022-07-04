@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cadl compile app.cadl && tsc && node scripts/smoke.js"
+    "build": "cadl compile app.cadl && node scripts/smoke.js"
   },
   "keywords": [],
   "author": "",

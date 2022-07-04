@@ -10,6 +10,7 @@ import {
   getIntrinsicModelName,
   createDecoratorDefinition,
   StringLiteralType,
+  isKey,
 } from "@cadl-lang/compiler";
 import { DataStoreLibrary } from "./lib.js";
 import { mkdir, writeFile } from "fs/promises";
@@ -113,7 +114,7 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
   let typeDecls: string[] = [];
   const knownTypes = new Map<Type, string>();
   let entityStoreCode = `
-  class EntityStore<T> {
+  class EntityStore<T, TKeyField extends string = never> {
     private client: CosmosClient;
     private databaseId: string;
     private collectionId: string;
@@ -155,14 +156,14 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
       return this.find(\`select * from \${this.collectionId}\`);
     }
 
-    async add(item: T): Promise<T & Resource> {
+    async add(item: Omit<T, TKeyField>): Promise<T & Resource> {
       const { resource } = await this.container.items.create(item);
-      return resource!;
+      return resource! as T & Resource;
     }
 
-    async update(id: string, updatedItem: T): Promise<T & Resource> {
+    async update(id: string, updatedItem: Omit<T, TKeyField>): Promise<T & Resource> {
       const { resource } = await this.container.item(id).replace(updatedItem);
-      return resource!;
+      return resource! as T & Resource;
     }
 
     async delete(id: string): Promise<void> {
@@ -213,7 +214,7 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     let fields: string[] = [];
     for (const [model, info] of getStoreState(p)) {
       const name = model.name;
-      fields.push(`public ${name}: EntityStore<${getTypeReference(model)}>;`);
+      fields.push(`public ${name}: EntityStore<${getTypeReference(model)}, ${getKeyFields(model)}>;`);
     }
 
     return fields.join("\n");
@@ -224,12 +225,22 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
       const name = model.name;
       code += `this.${name} = new EntityStore<${getTypeReference(
         model
-      )}>(this.client, "${info.databaseName}", "${
+      )}, ${getKeyFields(model)}>(this.client, "${info.databaseName}", "${
         info.collectionName ?? name
       }");\n`;
     }
 
     return code;
+  }
+  
+  function getKeyFields(model: ModelType) {
+    for (const prop of model.properties.values()) {
+      if (isKey(p, prop)) {
+        return `"${prop.name}"`;
+      }
+    }
+
+    return 'never';
   }
 
   function getDataStoreInitCode() {
