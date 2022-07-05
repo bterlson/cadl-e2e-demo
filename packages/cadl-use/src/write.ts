@@ -52,14 +52,14 @@ export function writeFile(program: Program, details: OperationDetails): string {
 
   let additionalPositionalParams = "";
 
+  let inlineDeclarations = "";
+
+  let body = "";
+
   for (const p of requiredParams) {
     additionalPositionalParams += `,
     ${camelCasify(p.name)}: ${convertToTypeScript(p.param.type)}`;
   }
-
-  let inlineDeclarations = "";
-
-  let body = "";
 
   if (details.parameters.body) {
     const bodyModel = details.parameters.body;

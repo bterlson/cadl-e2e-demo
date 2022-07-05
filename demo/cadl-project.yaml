@@ -1,6 +1,6 @@
 emitters:
-  'cadl-data-store': true
-  'cadl-azure-static-web-app': true
-  'cadl-azure-functions': true
-  'cadl-azure-accelerators': true
-  
+  "cadl-data-store": true
+  "cadl-azure-static-web-app": true
+  "cadl-azure-functions": true
+  "cadl-azure-accelerators": true
+  "cadl-use": true

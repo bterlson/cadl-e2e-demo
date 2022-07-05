@@ -1,8 +1,12 @@
 import "@cadl-lang/rest";
 import "cadl-data-store";
 import "cadl-azure-static-web-app";
+import "cadl-use";
 
 using Cadl.Http;
+
+@use("Microsoft.KeyVault.Secrets.getSecret")
+@use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
 namespace DemoApp {
   namespace API {
 

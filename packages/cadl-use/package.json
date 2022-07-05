@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
+  "main": "dist/use.js",
+  "cadlMain": "dist/use.js",
   "bin": {
     "cadl-use": "./bin.js"
   },
