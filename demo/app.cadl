@@ -1,18 +1,34 @@
 import "@cadl-lang/rest";
 import "cadl-data-store";
+import "cadl-azure-static-web-app";
 
-namespace MyService;
-@store("dbName") model Widget {
-  name: string,
-  color: "red" | "blue";
+using Cadl.Http;
+namespace DemoApp {
+  namespace API {
+
+    @store("dbName")
+    model Comment {
+      @key
+      @visibility("read")
+      id: string;
+
+      contents: string;
+
+      @visibility("read")
+      sentiment: string;
+    }
+
+    @withVisibility("write")
+    model CommentRequest {
+      ... Comment
+    };
+
+    @post op createComment(@body comment: CommentRequest): Comment;
+    @get op getComment(@path id: string): Comment;
+  }
+
+  @AzureStaticWebApp
+  namespace Static { }
 }
 
-@store("dbName") model Person {
-  @key id: string;
-  name: string;
-  age: int32;
-  favoriteSport: "baseball" | "football" | "soccer";
-}
 
-op getPerson(@Http.path id: string): Person;
-op createPerson(@Http.body person: Person): Person;

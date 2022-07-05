@@ -1,8 +1,9 @@
 {
-  "name": "cadl-azure-static-sites",
+  "name": "cadl-azure-static-web-app",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "cadlMain": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
@@ -11,9 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@cadl-lang/compiler": "^0.32.0"
+    "@cadl-lang/compiler": "^0.32.0",
+    "cadl-azure-accelerators": "workspace:*"
   },
   "devDependencies": {
     "typescript": "~4.7.4"
-  }
+  },
+  "type": "module"
 }

@@ -10,10 +10,12 @@ import {
   getIntrinsicModelName,
   createDecoratorDefinition,
   StringLiteralType,
+  isKey,
 } from "@cadl-lang/compiler";
 import { DataStoreLibrary } from "./lib.js";
 import { mkdir, writeFile } from "fs/promises";
 import { format } from "prettier";
+import { addBicepFile, addSecret } from "cadl-azure-accelerators";
 
 import * as path from "path";
 
@@ -60,6 +62,42 @@ export async function $onEmit(
   const outputDir = path.join(p.compilerOptions.outputPath, "store");
   const emitter = createTsEmitter(p, { outputDir });
   emitter.emit();
+
+  addBicepFile("cosmos", `
+  param location string
+  param principalId string = ''
+  param resourceToken string
+  param tags object
+  resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2021-04-15' = {
+    name: 'cosmos-\${resourceToken}'
+    kind: 'GlobalDocumentDB'
+    location: location
+    tags: tags
+    properties: {
+      consistencyPolicy: {
+        defaultConsistencyLevel: 'Session'
+      }
+      locations: [
+        {
+          locationName: location
+          failoverPriority: 0
+          isZoneRedundant: false
+        }
+      ]
+      databaseAccountOfferType: 'Standard'
+      enableAutomaticFailover: false
+      enableMultipleWriteLocations: false
+      capabilities: [
+        {
+          name: 'EnableServerless'
+        }
+      ]
+    }
+  }
+
+  output cosmosConnectionStringValue string = cosmos.listConnectionStrings().connectionStrings[0].connectionString
+`)
+  addSecret("cosmosConnectionString", "cosmosConnectionStringValue", ["cosmos"]);
 }
 
 const instrinsicNameToTSType = new Map<string, string>([
@@ -76,7 +114,7 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
   let typeDecls: string[] = [];
   const knownTypes = new Map<Type, string>();
   let entityStoreCode = `
-  class EntityStore<T> {
+  class EntityStore<T, TKeyField extends string = never> {
     private client: CosmosClient;
     private databaseId: string;
     private collectionId: string;
@@ -118,14 +156,14 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
       return this.find(\`select * from \${this.collectionId}\`);
     }
 
-    async add(item: T): Promise<T & Resource> {
+    async add(item: Omit<T, TKeyField>): Promise<T & Resource> {
       const { resource } = await this.container.items.create(item);
-      return resource!;
+      return resource! as T & Resource;
     }
 
-    async update(id: string, updatedItem: T): Promise<T & Resource> {
+    async update(id: string, updatedItem: Omit<T, TKeyField>): Promise<T & Resource> {
       const { resource } = await this.container.item(id).replace(updatedItem);
-      return resource!;
+      return resource! as T & Resource;
     }
 
     async delete(id: string): Promise<void> {
@@ -161,8 +199,8 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     export class DataStore {
       private client: CosmosClient;
       ${getDataStorePublicFields()}
-      constructor(endpoint: string, key: string) {
-        this.client = new CosmosClient({endpoint, key});
+      constructor(connectionString: string) {
+        this.client = new CosmosClient(connectionString);
         ${getDataStoreConstructorCode()}
       }
     
@@ -176,7 +214,7 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     let fields: string[] = [];
     for (const [model, info] of getStoreState(p)) {
       const name = model.name;
-      fields.push(`public ${name}: EntityStore<${getTypeReference(model)}>;`);
+      fields.push(`public ${name}: EntityStore<${getTypeReference(model)}, ${getKeyFields(model)}>;`);
     }
 
     return fields.join("\n");
@@ -187,12 +225,22 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
       const name = model.name;
       code += `this.${name} = new EntityStore<${getTypeReference(
         model
-      )}>(this.client, "${info.databaseName}", "${
+      )}, ${getKeyFields(model)}>(this.client, "${info.databaseName}", "${
         info.collectionName ?? name
       }");\n`;
     }
 
     return code;
+  }
+  
+  function getKeyFields(model: ModelType) {
+    for (const prop of model.properties.values()) {
+      if (isKey(p, prop)) {
+        return `"${prop.name}"`;
+      }
+    }
+
+    return 'never';
   }
 
   function getDataStoreInitCode() {
