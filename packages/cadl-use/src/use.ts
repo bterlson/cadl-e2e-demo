@@ -83,7 +83,7 @@ export async function $onEmit(program: Program): Promise<void> {
 
   const files = resolutions.map(
     ({ name, program: schemaProgram, operation }) => [
-      path.join(outputPath, ...name.split(".")) + ".ts",
+      path.join(outputPath, name.split(".").at(-1)!) + ".ts",
       writeFile(
         schemaProgram,
         getRestOperationDefinition(schemaProgram, operation)

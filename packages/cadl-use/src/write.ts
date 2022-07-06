@@ -190,7 +190,7 @@ export function writeFile(program: Program, details: OperationDetails): string {
 import type { ${credentialVariants.join(", ")} } from "@azure/core-auth";
 ${inlineDeclarations}
 export async function ${details.operation.name}(
-    baseUrl: URL${additionalPositionalParams}
+    baseUrl: string | URL${additionalPositionalParams}
 ): Promise<${responseType}> {
     const path = \`${fragmentReplacer}\`;${addQueryParams}
     const resource = new URL(${endpoint}, baseUrl).toString();

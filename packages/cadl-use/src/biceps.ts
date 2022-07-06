@@ -1,4 +1,9 @@
-import { addBicepFile } from "cadl-azure-accelerators";
+import {
+  addBicepFile,
+  addOutput,
+  addSecret,
+  addService,
+} from "cadl-azure-accelerators";
 
 export const BICEPS = {
   textanalytics: () => {
@@ -18,7 +23,9 @@ resource textAnalytics 'Microsoft.CognitiveServices/accounts@2022-03-01' = {
     name: 'S'
   }
   tags: tags
-  properties: {}
+  properties: {
+    customSubDomainName: 'textAnalytics\${resourceToken}.cognitiveservices.azure.com'
+  }
 }
 
 resource cognitiveServicesUser 'Microsoft.Authorization/roleDefinition@2018-01-01-preview' existing = {
@@ -37,6 +44,11 @@ resource rbacAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-prev
 
 output LANGUAGE_ENDPOINT string = 'https://textAnalytics\${resourceToken}.cognitiveservices.azure.com/'
 `
+    );
+    addOutput(
+      "LANGUAGE_ENDPOINT",
+      "string",
+      "language.outputs.LANGUAGE_ENDPOINT"
     );
   },
 } as Record<string, () => void>;

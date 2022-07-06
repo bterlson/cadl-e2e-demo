@@ -9,10 +9,19 @@ import { mkdir, writeFile } from "fs/promises";
 import { stringify } from "yaml";
 
 import "./lib.js";
+import { EOL } from "os";
 
-const biceps: {name: string, contents: string, params: { key: string, value: string }[]}[] = []
+const biceps: {
+  name: string;
+  contents: string;
+  params: { key: string; value: string }[];
+}[] = [];
 
-export function addBicepFile(name: string, contents: string, params: { key: string, value: string }[] = []) {
+export function addBicepFile(
+  name: string,
+  contents: string,
+  params: { key: string; value: string }[] = []
+) {
   biceps.push({ name, contents, params });
 }
 
@@ -33,11 +42,20 @@ export function addService(name: string, contents: ServiceDescription) {
 
 interface SecretDescription {
   value: string;
-  params: string[]
+  params: string[];
 }
 const secrets: Record<string, SecretDescription> = {};
-export function addSecret(name: string, value: string, params: string[]=[]) {
+export function addSecret(name: string, value: string, params: string[] = []) {
   secrets[name] = { value, params };
+}
+
+interface OutputDescription {
+  type: string;
+  value: string;
+}
+const outputs: Record<string, OutputDescription> = {};
+export function addOutput(name: string, type: string, value: string) {
+  outputs[name] = { value, type };
 }
 
 export async function $onEmit(p: Program) {
@@ -45,14 +63,26 @@ export async function $onEmit(p: Program) {
   const infraDir = path.join(p.compilerOptions.outputPath, "infra");
   await mkdir(infraDir, { recursive: true });
 
-  addBicepFile('keyvault', keyvaultBicep(), keyvaultParams());
-  addBicepFile('appinsights', appInsightsBicep());
+  addBicepFile("keyvault", keyvaultBicep(), keyvaultParams());
+  addBicepFile("appinsights", appInsightsBicep());
+  addOutput(
+    "AZURE_KEY_VAULT_ENDPOINT",
+    "string",
+    "keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT"
+  );
+  addOutput(
+    "APPINSIGHTS_INSTRUMENTATIONKEY",
+    "string",
+    "appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY"
+  );
 
   for (const bicep of biceps) {
     await writeFile(path.join(infraDir, bicep.name + ".bicep"), bicep.contents);
   }
 
-  await writeFile(path.join(infraDir, "main.parameters.json"), `
+  await writeFile(
+    path.join(infraDir, "main.parameters.json"),
+    `
   {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
@@ -68,8 +98,11 @@ export async function $onEmit(p: Program) {
       }
     }
   }
-`)
-  await writeFile(path.join(infraDir, "main.bicep"), `
+`
+  );
+  await writeFile(
+    path.join(infraDir, "main.bicep"),
+    `
     targetScope = 'subscription'
 
     @minLength(1)
@@ -97,11 +130,16 @@ export async function $onEmit(p: Program) {
 
     ${importBiceps()}
 
-    output AZURE_KEY_VAULT_ENDPOINT string = keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT
-    output APPINSIGHTS_INSTRUMENTATIONKEY string = appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY
-`)
+    ${Object.entries(outputs)
+      .map(([name, { type, value }]) => `output ${name} ${type} = ${value}`)
+      .join(EOL)}
+`
+  );
 
-  await writeFile(path.join(p.compilerOptions.outputPath, "azure.yaml"), azureYaml());
+  await writeFile(
+    path.join(p.compilerOptions.outputPath, "azure.yaml"),
+    azureYaml()
+  );
 }
 
 function azureYaml() {
@@ -110,7 +148,7 @@ function azureYaml() {
   return `
 # yaml-language-server: $schema=https://azuresdkreleasepreview.blob.core.windows.net/azd/schema/azure.yaml.json
 ${stringify(yaml)}
-  `
+  `;
 }
 
 function keyvaultBicep() {
@@ -119,7 +157,9 @@ function keyvaultBicep() {
   param principalId string = ''
   param resourceToken string
   param tags object
-  ${keyvaultParams().map(v => `param ${v.key} string`).join("\n")}
+  ${keyvaultParams()
+    .map((v) => `param ${v.key} string`)
+    .join("\n")}
 
   resource keyVault 'Microsoft.KeyVault/vaults@2019-09-01' = {
     name: 'keyvault\${resourceToken}'
@@ -150,7 +190,7 @@ function keyvaultBicep() {
   }
 
   output AZURE_KEY_VAULT_ENDPOINT string = keyVault.properties.vaultUri
-  `
+  `;
 }
 
 function appInsightsBicep() {
@@ -1399,13 +1439,13 @@ function appInsightsBicep() {
   output APPINSIGHTS_INSTRUMENTATIONKEY string = appInsights.properties.InstrumentationKey
   output APPINSIGHTS_CONNECTION_STRING string = appInsights.properties.ConnectionString
   
-  `
+  `;
 }
 
 function keyvaultSecrets() {
-  let resources = '';
+  let resources = "";
 
-  for(const [key, value] of Object.entries(secrets)) {
+  for (const [key, value] of Object.entries(secrets)) {
     resources += `
       resource ${key} 'secrets' = {
         name: '${key}'
@@ -1413,19 +1453,20 @@ function keyvaultSecrets() {
           value: ${value.value}
         }
       }
-    `
+    `;
   }
-  
 
   return resources;
 }
 
 function keyvaultParams() {
-  return Object.values(secrets).flatMap(v => v.params.map(p => ({ key: v.value, value: `${p}.outputs.${v.value}`})));
+  return Object.values(secrets).flatMap((v) =>
+    v.params.map((p) => ({ key: v.value, value: `${p}.outputs.${v.value}` }))
+  );
 }
 
 function importBiceps() {
-  let imports = '';
+  let imports = "";
   for (const bicep of biceps) {
     // todo: need to name these resources better.
     imports += `
@@ -1437,12 +1478,11 @@ function importBiceps() {
           principalId: principalId
           resourceToken: resourceToken
           tags: tags
-          ${bicep.params.map(v => `${v.key}: ${v.value}`).join("\n")}
+          ${bicep.params.map((v) => `${v.key}: ${v.value}`).join("\n")}
         }
       }
-      `
+      `;
   }
 
   return imports;
-
 }
