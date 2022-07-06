@@ -8,3 +8,4 @@ await cp("cadl-output/store", "./src/api/store", {
   force: true,
 });
 await cp("cadl-output/use", "./src/api/use", { recursive: true, force: true });
+await cp("cadl-output/api", "./src/api", { recursive: true, force: true});
