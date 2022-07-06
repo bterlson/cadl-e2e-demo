@@ -19,6 +19,7 @@
     "@cadl-lang/compiler": "^0.32.0",
     "@cadl-lang/rest": "^0.15.0",
     "@types/prettier": "^2.6.3",
+    "cadl-azure-accelerators": "workspace: *",
     "cadl-azure-auth": "workspace:cadl-azure-auth",
     "prettier": "^2.7.1"
   },

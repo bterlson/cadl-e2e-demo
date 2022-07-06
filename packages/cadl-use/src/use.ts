@@ -15,6 +15,7 @@ import {
 import { getRestOperationDefinition } from "./rest.js";
 import { writeFile } from "./write.js";
 import { OperationDetails } from "@cadl-lang/rest/http";
+import { BICEPS } from "./biceps.js";
 
 const SCHEMA_DIR = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
@@ -109,6 +110,9 @@ async function resolveOperation(name: string): Promise<OperationResolution> {
   if (!selectedSchema) throw new Error("No known schema for API " + name);
 
   const schemaFilePath = path.join(SCHEMA_DIR, `${selectedSchema[1]}.cadl`);
+
+  // Biceps
+  BICEPS[selectedSchema[1]]?.();
 
   const program = await createProgram(NodeHost, schemaFilePath, {
     noEmit: true,
