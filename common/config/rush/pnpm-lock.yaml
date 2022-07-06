@@ -68,10 +68,12 @@ importers:
   ../../packages/cadl-azure-functions:
     specifiers:
       '@cadl-lang/compiler': ^0.32.0
+      '@cadl-lang/rest': ~0.15.0
       cadl-azure-accelerators: workspace:*
       typescript: ~4.7.4
     dependencies:
       '@cadl-lang/compiler': 0.32.0
+      '@cadl-lang/rest': 0.15.0_@cadl-lang+compiler@0.32.0
       cadl-azure-accelerators: link:../cadl-azure-accelerators
     devDependencies:
       typescript: 4.7.4
