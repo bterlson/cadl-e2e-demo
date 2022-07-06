@@ -15,16 +15,18 @@ param resourceToken string
 param principalId string
 param tags object
 
+var accountName = 'textAnalytics\${resourceToken}'
+
 resource textAnalytics 'Microsoft.CognitiveServices/accounts@2022-03-01' = {
   kind: 'TextAnalytics'
-  name: 'textAnalytics\${resourceToken}'
+  name: accountName
   location: location
   sku: {
     name: 'S'
   }
   tags: tags
   properties: {
-    customSubDomainName: 'textAnalytics\${resourceToken}.cognitiveservices.azure.com'
+    customSubDomainName: accountName
   }
 }
 
@@ -42,7 +44,7 @@ resource rbacAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-prev
   }
 }
 
-output LANGUAGE_ENDPOINT string = 'https://textAnalytics\${resourceToken}.cognitiveservices.azure.com/'
+output LANGUAGE_ENDPOINT string = 'https://\${accountName}.cognitiveservices.azure.com/'
 `
     );
     addOutput(
