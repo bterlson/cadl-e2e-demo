@@ -6,10 +6,10 @@ import "cadl-azure-functions";
 
 using Cadl.Http;
 
-@use("Microsoft.KeyVault.Secrets.getSecret")
-@use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
 namespace DemoApp {
   @serviceTitle("Backend")
+  @use("Microsoft.KeyVault.Secrets.getSecret")
+  @use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
   namespace API {
     @store("dbName")
     model Comment {
@@ -39,6 +39,7 @@ namespace DemoApp {
   }
 
   @AzureStaticWebApp
+  @use("API.Comments")
   namespace Static { }
 }
 

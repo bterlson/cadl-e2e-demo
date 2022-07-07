@@ -6,6 +6,7 @@ import {
   createProgram,
   DecoratorContext,
   formatDiagnostic,
+  InterfaceType,
   NamespaceType,
   NodeHost,
   OperationType,
@@ -13,9 +14,10 @@ import {
   Type,
 } from "@cadl-lang/compiler";
 import { getRestOperationDefinition } from "./rest.js";
-import { writeFile } from "./write.js";
+import { writeClientFile, writeOperationFile } from "./write.js";
 import { OperationDetails } from "@cadl-lang/rest/http";
 import { BICEPS } from "./biceps.js";
+import { Interface } from "readline";
 
 const SCHEMA_DIR = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
@@ -68,28 +70,26 @@ export async function $onEmit(program: Program): Promise<void> {
   const outputPath = path.join(program.compilerOptions.outputPath, "use");
   const apps = [...program.stateMap($_use).entries()];
 
-  if (apps.length > 1) {
-    throw new Error("More than one app not yet supported.");
-  } else if (apps.length === 0) return;
-
-  const [[_appNamespace, operationSelectors]] = apps as [
-    NamespaceType,
-    string[]
-  ][];
+  if (apps.length === 0) return;
 
   const resolutions = await Promise.all(
-    operationSelectors.map(resolveOperation)
+    (apps as [NamespaceType, string[]][]).flatMap(([appNamespace, selectors]) =>
+      selectors.map((selector) =>
+        resolveSelector(program, appNamespace, selector)
+      )
+    )
   );
 
-  const files = resolutions.map(
-    ({ name, program: schemaProgram, operation }) => [
-      path.join(outputPath, name.split(".").at(-1)!) + ".ts",
-      writeFile(
-        schemaProgram,
-        getRestOperationDefinition(schemaProgram, operation)
-      ),
-    ]
-  );
+  const files = resolutions.map(({ name, program: schemaProgram, type }) => {
+    const contents =
+      type.kind === "Operation"
+        ? writeOperationFile(
+            schemaProgram,
+            getRestOperationDefinition(schemaProgram, type)
+          )
+        : writeClientFile(schemaProgram, type);
+    return [path.join(outputPath, name.split(".").at(-1)!) + ".ts", contents];
+  });
 
   for (const [name, contents] of files) {
     await program.host.mkdirp(path.dirname(name));
@@ -102,50 +102,67 @@ const KNOWN_SCHEMA_PREFIXES = {
   "Azure.AI.TextAnalytics": "textanalytics",
 } as const;
 
-async function resolveOperation(name: string): Promise<OperationResolution> {
-  const selectedSchema = Object.entries(KNOWN_SCHEMA_PREFIXES).find(
-    ([prefix]) => name.startsWith(prefix)
+async function resolveSelector(
+  hostProgram: Program,
+  appNamespace: NamespaceType,
+  name: string
+): Promise<UseResolution> {
+  let selectedSchema = Object.entries(KNOWN_SCHEMA_PREFIXES).find(([prefix]) =>
+    name.startsWith(prefix)
   );
 
-  if (!selectedSchema) throw new Error("No known schema for API " + name);
+  let program = hostProgram;
+  let type: UseResolution["type"] | undefined;
 
-  const schemaFilePath = path.join(SCHEMA_DIR, `${selectedSchema[1]}.cadl`);
+  if (selectedSchema) {
+    const schemaFilePath = path.join(SCHEMA_DIR, `${selectedSchema[1]}.cadl`);
 
-  // Biceps
-  BICEPS[selectedSchema[1]]?.();
+    // Biceps
+    BICEPS[selectedSchema[1]]?.();
 
-  const program = await createProgram(NodeHost, schemaFilePath, {
-    noEmit: true,
-  });
+    program = await createProgram(NodeHost, schemaFilePath, {
+      noEmit: true,
+    });
 
-  if (program.hasError()) {
-    for (const diagnostic of program.diagnostics.map(formatDiagnostic)) {
-      console.error(diagnostic);
+    if (program.hasError()) {
+      for (const diagnostic of program.diagnostics.map(formatDiagnostic)) {
+        console.error(diagnostic);
+      }
+
+      throw new Error("Internal errors occurred during schema compilation.");
     }
 
-    throw new Error("Internal errors occurred during schema compilation.");
+    type = select(
+      program.checker.getGlobalNamespaceType(),
+      name.split(".")
+    ) as UseResolution["type"];
+  } else {
+    // No well-known schema was selected, so try to resolve it relative to the host program.
+    type = select(
+      appNamespace.namespace,
+      name.split(".")
+    ) as UseResolution["type"];
   }
 
-  const operation = select(
-    program.checker.getGlobalNamespaceType(),
-    name.split(".")
-  );
-
-  if (operation?.kind !== "Operation") {
-    throw new Error("Reference does not indicate an operation.");
+  if (!type) {
+    throw new Error(`Unable to resolve '${name}'.`);
+  } else if (!["Operation", "Interface", "Namespace"].includes(type.kind)) {
+    throw new Error(
+      `${name} resolved to '${type.kind}', but expected an Operation, Interface, or Namespace`
+    );
   }
 
   return {
     name,
-    operation,
+    type,
     program,
   };
 }
 
-interface OperationResolution {
+interface UseResolution {
   name: string;
   program: Program;
-  operation: OperationType;
+  type: OperationType | InterfaceType | NamespaceType;
 }
 
 export async function main(args: string[]): Promise<void> {
@@ -218,7 +235,7 @@ export async function main(args: string[]): Promise<void> {
 
   const definition = getRestOperationDefinition(program, operation);
 
-  process.stdout.write(writeFile(program, definition));
+  process.stdout.write(writeOperationFile(program, definition));
 
   return;
 }
@@ -242,6 +259,6 @@ function select(t: Type | undefined, selector: string[]): Type | undefined {
   }
 
   function getNamespaceChild(t: NamespaceType, s: string): Type | undefined {
-    return t.namespaces.get(s) ?? t.operations.get(s);
+    return t.namespaces.get(s) ?? t.interfaces.get(s) ?? t.operations.get(s);
   }
 }

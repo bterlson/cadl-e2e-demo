@@ -1,5 +1,14 @@
-import { OperationType, Program } from "@cadl-lang/compiler";
-import { getAllRoutes, OperationDetails } from "@cadl-lang/rest/http";
+import {
+  InterfaceType,
+  NamespaceType,
+  OperationType,
+  Program,
+} from "@cadl-lang/compiler";
+import {
+  getAllRoutes,
+  OperationContainer,
+  OperationDetails,
+} from "@cadl-lang/rest/http";
 
 export function getRestOperationDefinition(
   program: Program,
@@ -11,4 +20,12 @@ export function getRestOperationDefinition(
     throw new Error("No route for operation.");
   }
   return info;
+}
+
+export function getRestOperationsWithin(
+  program: Program,
+  scope: OperationContainer
+): OperationDetails[] {
+  const [routes, _diagnostics] = getAllRoutes(program);
+  return routes.filter((r) => r.container === scope);
 }
