@@ -69,24 +69,4 @@ export async function $onEmit(p: Program) {
   output WEB_URI string = 'https://\${web.properties.defaultHostname}'
   `
   );
-  addBicepFile("getSwaEnv", `
-  param resourceToken string
-  output swaAppSettings object = list('Microsoft.Web/staticSites/stapp-\${resourceToken}/config/appsettings', '2021-03-01').properties    
-  `, [], true);
-    
-  handleEnv(env => `
-    module getSwaEnv './getSwaEnv.bicep' = {
-      name: 'getSwaEnv'
-      params: {
-        resourceToken: resourceToken
-      }
-    }
-    
-    resource swaConfig 'Microsoft.Web/staticSites/config@2021-03-01' = {
-      name: 'stapp-\${resourceToken}/appsettings'
-      properties: union(getSwaEnv.outputs.swaAppSettings, {
-          ${env.map(e => `${e.name}: ${e.value}`).join("\n")}
-        })
-    }    
-  `)
 }
