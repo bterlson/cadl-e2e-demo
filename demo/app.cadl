@@ -6,41 +6,37 @@ import "cadl-azure-functions";
 
 using Cadl.Http;
 
-namespace DemoApp {
-  @serviceTitle("Backend")
-  @use("Microsoft.KeyVault.Secrets.getSecret")
-  @use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
-  namespace API {
-    @store("dbName")
-    model Comment {
-      @key
-      @visibility("read")
-      id: string;
+@serviceTitle("Demo")
+@use("Microsoft.KeyVault.Secrets.getSecret")
+@use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
+namespace DemoApp;
 
-      contents: string;
+@store("dbName")
+model Comment {
+  @key
+  @visibility("read")
+  id: string;
 
-      @visibility("read")
-      sentiment: string;
-    }
+  contents: string;
 
-    @withVisibility("write")
-    model CommentRequest {
-      ... Comment
-    };
-
-    @AzureFunction
-    @route("/comments")
-    interface Comments {
-      @post op createComment(@body comment: CommentRequest): OkResponse<Comment>;
-      @get op getComment(@path id: string): OkResponse<Comment>;
-      @get op listComments(): OkResponse<Comment[]>;
-    }
-
-  }
-
-  @AzureStaticWebApp
-  @use("API.Comments")
-  namespace Static { }
+  @visibility("read")
+  sentiment: string;
 }
 
+@withVisibility("write")
+model CommentRequest {
+  ... Comment
+};
+
+@AzureFunction
+@route("/comments")
+interface Comments {
+  @post op createComment(@body comment: CommentRequest): OkResponse<Comment>;
+  @get op getComment(@path id: string): OkResponse<Comment>;
+  @get op listComments(): OkResponse<Comment[]>;
+}
+
+@AzureStaticWebApp
+@use("Comments")
+interface Static { }
 

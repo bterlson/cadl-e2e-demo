@@ -16,3 +16,5 @@ await cp("cadl-output/use/static", "./src/web/use", {
   force: true,
 });
 await cp("cadl-output/api", "./src/api", { recursive: true, force: true });
+await cp("cadl-output/api", "./src/api", { recursive: true, force: true });
+await cp("cadl-output/openapi.json", "./openapi.json", { force: true });
