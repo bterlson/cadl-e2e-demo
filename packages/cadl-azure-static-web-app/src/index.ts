@@ -1,6 +1,7 @@
 import {
   createDecoratorDefinition,
   DecoratorContext,
+  InterfaceType,
   NamespaceType,
   Program,
 } from "@cadl-lang/compiler";
@@ -9,11 +10,11 @@ import { addBicepFile, addService, handleEnv } from "cadl-azure-accelerators";
 const swaKey = Symbol();
 const swaDecorator = createDecoratorDefinition({
   name: "@AzureStaticWebApp",
-  target: "Namespace",
+  target: ["Namespace", "Interface"],
   args: [],
-} as const);
+} as any); // todo: Fix this with latest cadl
 
-type SwaStateMap = Map<NamespaceType, true>;
+type SwaStateMap = Map<NamespaceType | InterfaceType, true>;
 
 export function getSwaState(p: Program): SwaStateMap {
   return p.stateMap(swaKey) as SwaStateMap;
@@ -26,7 +27,7 @@ export function getSwas(p: Program) {
 
 export function $AzureStaticWebApp(
   context: DecoratorContext,
-  t: NamespaceType
+  t: NamespaceType | InterfaceType
 ) {
   if (!swaDecorator.validate(context, t, [])) {
     return;

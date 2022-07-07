@@ -10,7 +10,10 @@ importers:
       '@azure/core-auth': ~1.3.2
       '@azure/identity': ~2.0.5
       '@cadl-lang/compiler': latest
+      '@cadl-lang/openapi': ~0.10.0
+      '@cadl-lang/openapi3': ~0.12.0
       '@cadl-lang/rest': latest
+      '@cadl-lang/versioning': ~0.6.0
       '@types/node': ^18.0.0
       cadl-azure-accelerators: workspace:*
       cadl-azure-functions: workspace:*
@@ -24,7 +27,10 @@ importers:
       '@azure/core-auth': 1.3.2
       '@azure/identity': 2.0.5
       '@cadl-lang/compiler': 0.32.0
+      '@cadl-lang/openapi': 0.10.0_d3dfa517675e3ccfa663f3d08cecbf70
+      '@cadl-lang/openapi3': 0.12.0_8e282d536d21683a08f2c85eceb65fa4
       '@cadl-lang/rest': 0.15.0_@cadl-lang+compiler@0.32.0
+      '@cadl-lang/versioning': 0.6.0
       '@types/node': 18.0.0
       cadl-azure-accelerators: link:../packages/cadl-azure-accelerators
       cadl-azure-functions: link:../packages/cadl-azure-functions
@@ -328,11 +334,44 @@ packages:
       yargs: 17.3.1
     dev: false
 
+  /@cadl-lang/openapi/0.10.0_d3dfa517675e3ccfa663f3d08cecbf70:
+    resolution: {integrity: sha512-YlJN4KcnwiQkldiwYQ8265dZt1BP01mnBu9SC6du9Qw3vMTUO9XLl857moGKyfjuV2Mj2wFPQcWq/Sdf+2wcKg==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      '@cadl-lang/compiler': ~0.32.0
+      '@cadl-lang/rest': ~0.15.0
+    dependencies:
+      '@cadl-lang/compiler': 0.32.0
+      '@cadl-lang/rest': 0.15.0_@cadl-lang+compiler@0.32.0
+    dev: false
+
+  /@cadl-lang/openapi3/0.12.0_8e282d536d21683a08f2c85eceb65fa4:
+    resolution: {integrity: sha512-soAW0OiV54fYnizmwbsST7QXglQUImSR+l7eqHajxcxUGRAtbovwRqMGbnx+pcDBU6dxUU56z9Pgg76rd6spEg==}
+    engines: {node: '>=16.0.0'}
+    peerDependencies:
+      '@cadl-lang/compiler': ~0.32.0
+      '@cadl-lang/openapi': ~0.10.0
+      '@cadl-lang/rest': ~0.15.0
+      '@cadl-lang/versioning': ~0.6.0
+    dependencies:
+      '@cadl-lang/compiler': 0.32.0
+      '@cadl-lang/openapi': 0.10.0_d3dfa517675e3ccfa663f3d08cecbf70
+      '@cadl-lang/rest': 0.15.0_@cadl-lang+compiler@0.32.0
+      '@cadl-lang/versioning': 0.6.0
+    dev: false
+
   /@cadl-lang/rest/0.15.0_@cadl-lang+compiler@0.32.0:
     resolution: {integrity: sha512-rO1yEXZ9cWr3FtAQbA/DLWslUjUYkOAkei9ZJxcHHmzqJnAI5fylFB23LaAJhVA6a8lAHis30CtJj8sY/KXQAg==}
     engines: {node: '>=16.0.0'}
     peerDependencies:
       '@cadl-lang/compiler': ~0.32.0
+    dependencies:
+      '@cadl-lang/compiler': 0.32.0
+    dev: false
+
+  /@cadl-lang/versioning/0.6.0:
+    resolution: {integrity: sha512-IRMefE9nijDB34aF8l3WqHADR2a6wKWlzjDGvllBKhBJPF7I4NlNxg87+0Dd638JrNMpcbPWvbFWSktC+Las/w==}
+    engines: {node: '>=16.0.0'}
     dependencies:
       '@cadl-lang/compiler': 0.32.0
     dev: false

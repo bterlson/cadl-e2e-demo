@@ -3,4 +3,5 @@ emitters:
   "cadl-azure-static-web-app": true
   "cadl-azure-functions": true
   "cadl-use": true
+  "@cadl-lang/openapi3": true
   "cadl-azure-accelerators": true
