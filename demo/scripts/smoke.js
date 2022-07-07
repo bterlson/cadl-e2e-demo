@@ -7,5 +7,12 @@ await cp("cadl-output/store", "./src/api/store", {
   recursive: true,
   force: true,
 });
-await cp("cadl-output/use", "./src/api/use", { recursive: true, force: true });
-await cp("cadl-output/api", "./src/api", { recursive: true, force: true});
+await cp("cadl-output/use/api", "./src/api/use", {
+  recursive: true,
+  force: true,
+});
+await cp("cadl-output/use/static", "./src/web/use", {
+  recursive: true,
+  force: true,
+});
+await cp("cadl-output/api", "./src/api", { recursive: true, force: true });

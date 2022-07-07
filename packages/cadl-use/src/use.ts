@@ -80,16 +80,28 @@ export async function $onEmit(program: Program): Promise<void> {
     )
   );
 
-  const files = resolutions.map(({ name, program: schemaProgram, type }) => {
-    const contents =
-      type.kind === "Operation"
-        ? writeOperationFile(
-            schemaProgram,
-            getRestOperationDefinition(schemaProgram, type)
-          )
-        : writeClientFile(schemaProgram, type);
-    return [path.join(outputPath, name.split(".").at(-1)!) + ".ts", contents];
-  });
+  const files = resolutions.map(
+    ({ name, program: schemaProgram, type, ns }) => {
+      const contents =
+        type.kind === "Operation"
+          ? writeOperationFile(
+              schemaProgram,
+              getRestOperationDefinition(schemaProgram, type)
+            )
+          : writeClientFile(schemaProgram, type);
+      return [
+        path.join(
+          outputPath,
+          ns
+            .split(".")
+            .map((s) => s.toLowerCase())
+            .at(-1)!,
+          name.split(".").at(-1)!
+        ) + ".ts",
+        contents,
+      ];
+    }
+  );
 
   for (const [name, contents] of files) {
     await program.host.mkdirp(path.dirname(name));
@@ -154,6 +166,7 @@ async function resolveSelector(
 
   return {
     name,
+    ns: hostProgram.checker.getNamespaceString(appNamespace),
     type,
     program,
   };
@@ -161,6 +174,7 @@ async function resolveSelector(
 
 interface UseResolution {
   name: string;
+  ns: string;
   program: Program;
   type: OperationType | InterfaceType | NamespaceType;
 }
