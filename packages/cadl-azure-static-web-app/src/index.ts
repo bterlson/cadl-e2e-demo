@@ -82,7 +82,7 @@ export async function $onEmit(p: Program) {
       }
     }
     
-    resource swaConfig 'Microsoft.Web/sites/config@2020-12-01' = {
+    resource swaConfig 'Microsoft.Web/staticSites/config@2021-03-01' = {
       name: 'stapp-\${resourceToken}/appsettings'
       properties: union(getSwaEnv.outputs.swaAppSettings, {
           ${env.map(e => `${e.name}: ${e.value}`).join("\n")}

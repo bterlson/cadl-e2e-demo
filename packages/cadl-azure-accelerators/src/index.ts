@@ -9,6 +9,7 @@ import { mkdir, writeFile } from "fs/promises";
 import { stringify } from "yaml";
 
 import "./lib.js";
+import { EOL } from "os";
 
 const biceps: {
   name: string;
@@ -67,6 +68,15 @@ export function handleEnv(cb: (e: EnvDescription[]) => string) {
   envHandlers.push(cb);
 }
 
+interface OutputDescription {
+  type: string;
+  value: string;
+}
+const outputs: Record<string, OutputDescription> = {};
+export function addOutput(name: string, type: string, value: string) {
+  outputs[name] = { value, type };
+}
+
 export async function $onEmit(p: Program) {
   if (!p.compilerOptions.outputPath) return;
   const infraDir = path.join(p.compilerOptions.outputPath, "infra");
@@ -81,6 +91,16 @@ export async function $onEmit(p: Program) {
     })
   );
   addBicepFile("appInsights", appInsightsBicep());
+  addOutput(
+    "AZURE_KEY_VAULT_ENDPOINT",
+    "string",
+    "keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT"
+  );
+  addOutput(
+    "APPINSIGHTS_INSTRUMENTATIONKEY",
+    "string",
+    "appInsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY"
+  );
 
   for (const bicep of biceps) {
     await writeFile(path.join(infraDir, bicep.name + ".bicep"), bicep.contents);
@@ -136,8 +156,9 @@ export async function $onEmit(p: Program) {
 
     ${importBiceps()}
     ${importEnv()}
-    output AZURE_KEY_VAULT_ENDPOINT string = keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT
-    output APPINSIGHTS_INSTRUMENTATIONKEY string = appInsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY
+    ${Object.entries(outputs)
+      .map(([name, { type, value }]) => `output ${name} ${type} = ${value}`)
+      .join(EOL)}
 `
   );
 
@@ -146,7 +167,7 @@ export async function $onEmit(p: Program) {
     path.join(infraDir, "env.bicep"),
     envBicep()
   )
-
+  
   await writeFile(
     path.join(p.compilerOptions.outputPath, "azure.yaml"),
     azureYaml()
@@ -174,7 +195,7 @@ function keyvaultBicep() {
   param principalId string = ''
   param resourceToken string
   param tags object
-  param API_PRINCIPAL string = ''
+  param API_PRINCIPAL string
   ${keyvaultParams()
     .map((v) => `param ${v.key} string`)
     .join("\n")}

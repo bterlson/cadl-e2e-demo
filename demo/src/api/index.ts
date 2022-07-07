@@ -1,26 +1,45 @@
 import { Host } from "./Host.js";
 import { DataStore } from "./store/data-store.js";
-import { getSecret } from "./use/Microsoft/KeyVault/Secrets/getSecret.js";
+import { analyzeSentiment } from "./use/analyzeSentiment.js";
+import { getSecret } from "./use/getSecret.js";
+
 import { DefaultAzureCredential } from "@azure/identity";
 
-const cred = new DefaultAzureCredential();
-const cosmosSecret = await getSecret(
-  new URL(process.env.AZURE_KEY_VAULT_ENDPOINT!),
-  cred,
+const keyVaultUrl = process.env.AZURE_KEY_VAULT_ENDPOINT!;
+const credential = new DefaultAzureCredential();
+
+const cosmosKey = await getSecret(
+  keyVaultUrl,
+  credential,
   "cosmosConnectionString",
   "7.3"
 );
-const store = new DataStore(cosmosSecret.value!);
+
+const store = new DataStore(cosmosKey.value!);
 await store.init();
 
+const languageUrl = process.env.LANGUAGE_ENDPOINT!;
+
 Host.createComment = async function (comment) {
-  const commentWithSentiment = { ... comment, sentiment: "hi!" };
-  const createdComment = await store.Comment.add(commentWithSentiment);
+  const result = await analyzeSentiment(languageUrl, credential, {
+    documents: [
+      {
+        id: "1",
+        text: comment.contents,
+        language: "en",
+      },
+    ],
+  });
+
+  const sentiment =
+    result.documents.find(({ id }) => id === "1")?.sentiment ?? "unknown";
+
+  const createdComment = await store.Comment.add({ ...comment, sentiment });
   return {
     statusCode: 200,
-    body: createdComment
-  }
-}
+    body: createdComment,
+  };
+};
 
 Host.getComment = async function (id) {
   const comment = await store.Comment.get(id);
@@ -29,12 +48,3 @@ Host.getComment = async function (id) {
     body: comment!,
   };
 };
-
-Host.listComments = async function () {
-  const comments = await store.Comment.findAll();
-
-  return {
-    statusCode: 200,
-    body: comments
-  }
-}
