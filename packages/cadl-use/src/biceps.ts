@@ -1,5 +1,6 @@
 import {
   addBicepFile,
+  addEnvVar,
   addOutput,
   addSecret,
   addService,
@@ -14,6 +15,7 @@ param location string
 param resourceToken string
 param principalId string
 param tags object
+param API_PRINCIPAL string
 
 var accountName = 'textAnalytics\${resourceToken}'
 
@@ -36,21 +38,28 @@ resource cognitiveServicesUser 'Microsoft.Authorization/roleDefinition@2018-01-0
 }
 
 resource rbacAssignment 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  name: guid(textAnalytics.id, principalId, cognitiveServicesUser.id)
+  name: guid(textAnalytics.id, API_PRINCIPAL, cognitiveServicesUser.id)
   properties: {
     roleDefinitionId: cognitiveServicesUser.id
-    principalId: principalId
-    principalType: 'User'
+    principalId: API_PRINCIPAL
+    principalType: 'ServicePrincipal'
   }
 }
 
 output LANGUAGE_ENDPOINT string = 'https://\${accountName}.cognitiveservices.azure.com/'
-`
+`,
+      [{ key: "API_PRINCIPAL", value: "functions.outputs.API_PRINCIPAL" }]
     );
     addOutput(
       "LANGUAGE_ENDPOINT",
       "string",
       "language.outputs.LANGUAGE_ENDPOINT"
     );
+    addEnvVar({
+      name: "LANGUAGE_ENDPOINT",
+      source: "bicepOutput",
+      value: "LANGUAGE_ENDPOINT",
+      moduleName: "language",
+    });
   },
 } as Record<string, () => void>;
