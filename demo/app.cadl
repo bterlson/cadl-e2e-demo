@@ -9,8 +9,6 @@ using Cadl.Http;
 @use("Microsoft.KeyVault.Secrets.getSecret")
 @use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
 namespace DemoApp {
-
-  @AzureFunction
   @serviceTitle("Backend")
   namespace API {
     @store("dbName")
@@ -30,9 +28,14 @@ namespace DemoApp {
       ... Comment
     };
 
-    @post op createComment(@body comment: CommentRequest): OkResponse<Comment>;
-    @get op getComment(@path id: string): OkResponse<Comment>;
-    @get op listComments(): OkResponse<Comment[]>;
+    @AzureFunction
+    @route("/comments")
+    interface Comments {
+      @post op createComment(@body comment: CommentRequest): OkResponse<Comment>;
+      @get op getComment(@path id: string): OkResponse<Comment>;
+      @get op listComments(): OkResponse<Comment[]>;
+    }
+
   }
 
   @AzureStaticWebApp
