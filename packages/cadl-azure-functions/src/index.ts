@@ -14,7 +14,7 @@ import { getAllRoutes, getHeaderFieldName, OperationDetails } from "@cadl-lang/r
 import "./lib.js";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
-import { addBicepFile, addService } from "cadl-azure-accelerators";
+import { addBicepFile, addService, handleEnv } from "cadl-azure-accelerators";
 
 const functionKey = Symbol();
 const functionDecorator = createDecoratorDefinition({
@@ -279,6 +279,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
   }
   
   function emitFunctionsBicep() {
+    const name = "app-api-\${resourceToken}";
     addBicepFile(
       "functions",
       `
@@ -286,12 +287,10 @@ function createFunctionsEmitter(program: Program, basePath: string) {
       param principalId string = ''
       param resourceToken string
       param tags object
-      param APPINSIGHTS_INSTRUMENTATIONKEY string = ''
-      param AZURE_KEY_VAULT_ENDPOINT string = ''
       param WEB_URI string = ''
   
       resource api 'Microsoft.Web/sites@2021-02-01' = {
-        name: 'app-api-\${resourceToken}'
+        name: '${name}'
         location: location
         tags: union(tags, {
             'azd-service-name': 'api'
@@ -325,8 +324,6 @@ function createFunctionsEmitter(program: Program, basePath: string) {
         resource appSettings 'config' = {
           name: 'appsettings'
           properties: {
-            APPINSIGHTS_INSTRUMENTATIONKEY: APPINSIGHTS_INSTRUMENTATIONKEY
-            AZURE_KEY_VAULT_ENDPOINT: AZURE_KEY_VAULT_ENDPOINT
             'AzureWebJobsStorage': 'DefaultEndpointsProtocol=https;AccountName=\${storage.name};EndpointSuffix=\${environment().suffixes.storage};AccountKey=\${storage.listKeys().keys[0].value}'
             'FUNCTIONS_EXTENSION_VERSION': '~4'
             'FUNCTIONS_WORKER_RUNTIME': 'node'
@@ -393,22 +390,36 @@ function createFunctionsEmitter(program: Program, basePath: string) {
         }
       }
       
+      output API_PRINCIPAL string = api.identity.principalId
     `,
       [
-        {
-          key: "APPINSIGHTS_INSTRUMENTATIONKEY",
-          value: "appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY",
-        },
-        {
-          key: "AZURE_KEY_VAULT_ENDPOINT",
-          value: "keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT",
-        },
         {
           key: "WEB_URI",
           value: "swa.outputs.WEB_URI",
         },
       ]
     );
+
+    addBicepFile("getFnEnv", `
+    param resourceToken string
+    output fnAppSettings object = list('Microsoft.Web/sites/${name}/config/appsettings', '2020-12-01').properties    
+    `, [], true);
+      
+    handleEnv(env => `
+      module getFnEnv './getFnEnv.bicep' = {
+        name: 'getFnEnv'
+        params: {
+          resourceToken: resourceToken
+        }
+      }
+      
+      resource fnConfig 'Microsoft.Web/sites/config@2020-12-01' = {
+        name: '${name}/appsettings'
+        properties: union(getFnEnv.outputs.fnAppSettings, {
+            ${env.map(e => `${e.name}: ${e.value}`).join("\n")}
+          })
+      }    
+    `)
   }
 
   function isNumber(type: Type) {

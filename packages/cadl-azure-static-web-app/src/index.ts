@@ -5,7 +5,7 @@ import {
   Program,
 } from "@cadl-lang/compiler";
 import "./lib.js";
-import { addBicepFile, addService } from "cadl-azure-accelerators";
+import { addBicepFile, addService, handleEnv } from "cadl-azure-accelerators";
 const swaKey = Symbol();
 const swaDecorator = createDecoratorDefinition({
   name: "@AzureStaticWebApp",
@@ -64,27 +64,29 @@ export async function $onEmit(p: Program) {
     properties: {
       provider: 'Custom'
     }
-    resource staticWebAppSettings 'config@2021-01-15' = {
-      name: 'appsettings'
-      properties: {
-        APPINSIGHTS_INSTRUMENTATIONKEY: APPINSIGHTS_INSTRUMENTATIONKEY
-        AZURE_KEY_VAULT_ENDPOINT: AZURE_KEY_VAULT_ENDPOINT
-      }
-    }
-  
   }
   
   output WEB_URI string = 'https://\${web.properties.defaultHostname}'
-  `,
-    [
-      {
-        key: "APPINSIGHTS_INSTRUMENTATIONKEY",
-        value: "appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY",
-      },
-      {
-        key: "AZURE_KEY_VAULT_ENDPOINT",
-        value: "keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT",
-      },
-    ]
+  `
   );
+  addBicepFile("getSwaEnv", `
+  param resourceToken string
+  output swaAppSettings object = list('Microsoft.Web/staticSites/stapp-\${resourceToken}/config/appsettings', '2021-03-01').properties    
+  `, [], true);
+    
+  handleEnv(env => `
+    module getSwaEnv './getSwaEnv.bicep' = {
+      name: 'getSwaEnv'
+      params: {
+        resourceToken: resourceToken
+      }
+    }
+    
+    resource swaConfig 'Microsoft.Web/sites/config@2020-12-01' = {
+      name: 'stapp-\${resourceToken}/appsettings'
+      properties: union(getSwaEnv.outputs.swaAppSettings, {
+          ${env.map(e => `${e.name}: ${e.value}`).join("\n")}
+        })
+    }    
+  `)
 }

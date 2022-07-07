@@ -10,10 +10,20 @@ import { stringify } from "yaml";
 
 import "./lib.js";
 
-const biceps: {name: string, contents: string, params: { key: string, value: string }[]}[] = []
+const biceps: {
+  name: string;
+  contents: string;
+  params: { key: string; value: string }[];
+  skipMainLink: boolean;
+}[] = [];
 
-export function addBicepFile(name: string, contents: string, params: { key: string, value: string }[] = []) {
-  biceps.push({ name, contents, params });
+export function addBicepFile(
+  name: string,
+  contents: string,
+  params: { key: string; value: string }[] = [],
+  skipMainLink: boolean = false
+) {
+  biceps.push({ name, contents, params, skipMainLink });
 }
 
 interface ServiceDescription {
@@ -33,11 +43,28 @@ export function addService(name: string, contents: ServiceDescription) {
 
 interface SecretDescription {
   value: string;
-  params: string[]
+  params: string[];
 }
 const secrets: Record<string, SecretDescription> = {};
-export function addSecret(name: string, value: string, params: string[]=[]) {
+export function addSecret(name: string, value: string, params: string[] = []) {
   secrets[name] = { value, params };
+}
+
+interface EnvDescription {
+  name: string;
+  source: "bicepOutput" | "constant";
+  value: string;
+  moduleName?: string;
+}
+
+const env: EnvDescription[] = [];
+export function addEnvVar(descriptor: EnvDescription) {
+  env.push(descriptor);
+}
+
+const envHandlers: ((e: EnvDescription[]) => string)[] = [];
+export function handleEnv(cb: (e: EnvDescription[]) => string) {
+  envHandlers.push(cb);
 }
 
 export async function $onEmit(p: Program) {
@@ -45,14 +72,23 @@ export async function $onEmit(p: Program) {
   const infraDir = path.join(p.compilerOptions.outputPath, "infra");
   await mkdir(infraDir, { recursive: true });
 
-  addBicepFile('keyvault', keyvaultBicep(), keyvaultParams());
-  addBicepFile('appinsights', appInsightsBicep());
+  addBicepFile(
+    "keyvault",
+    keyvaultBicep(),
+    keyvaultParams().concat({
+      key: "API_PRINCIPAL",
+      value: "functions.outputs.API_PRINCIPAL",
+    })
+  );
+  addBicepFile("appInsights", appInsightsBicep());
 
   for (const bicep of biceps) {
     await writeFile(path.join(infraDir, bicep.name + ".bicep"), bicep.contents);
   }
 
-  await writeFile(path.join(infraDir, "main.parameters.json"), `
+  await writeFile(
+    path.join(infraDir, "main.parameters.json"),
+    `
   {
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
     "contentVersion": "1.0.0.0",
@@ -68,8 +104,11 @@ export async function $onEmit(p: Program) {
       }
     }
   }
-`)
-  await writeFile(path.join(infraDir, "main.bicep"), `
+`
+  );
+  await writeFile(
+    path.join(infraDir, "main.bicep"),
+    `
     targetScope = 'subscription'
 
     @minLength(1)
@@ -96,12 +135,22 @@ export async function $onEmit(p: Program) {
     }
 
     ${importBiceps()}
-
+    ${importEnv()}
     output AZURE_KEY_VAULT_ENDPOINT string = keyvault.outputs.AZURE_KEY_VAULT_ENDPOINT
-    output APPINSIGHTS_INSTRUMENTATIONKEY string = appinsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY
-`)
+    output APPINSIGHTS_INSTRUMENTATIONKEY string = appInsights.outputs.APPINSIGHTS_INSTRUMENTATIONKEY
+`
+  );
 
-  await writeFile(path.join(p.compilerOptions.outputPath, "azure.yaml"), azureYaml());
+
+  await writeFile(
+    path.join(infraDir, "env.bicep"),
+    envBicep()
+  )
+
+  await writeFile(
+    path.join(p.compilerOptions.outputPath, "azure.yaml"),
+    azureYaml()
+  );
 }
 
 function azureYaml() {
@@ -110,16 +159,25 @@ function azureYaml() {
   return `
 # yaml-language-server: $schema=https://azuresdkreleasepreview.blob.core.windows.net/azd/schema/azure.yaml.json
 ${stringify(yaml)}
-  `
+  `;
 }
 
 function keyvaultBicep() {
+  addEnvVar({
+    name: 'AZURE_KEY_VAULT_ENDPOINT',
+    source: 'bicepOutput',
+    value: 'AZURE_KEY_VAULT_ENDPOINT',
+    moduleName: 'keyvault'
+  });
   return `
   param location string
   param principalId string = ''
   param resourceToken string
   param tags object
-  ${keyvaultParams().map(v => `param ${v.key} string`).join("\n")}
+  param API_PRINCIPAL string = ''
+  ${keyvaultParams()
+    .map((v) => `param ${v.key} string`)
+    .join("\n")}
 
   resource keyVault 'Microsoft.KeyVault/vaults@2019-09-01' = {
     name: 'keyvault\${resourceToken}'
@@ -132,6 +190,16 @@ function keyvaultBicep() {
         name: 'standard'
       }
       accessPolicies: concat([
+          {
+            objectId: API_PRINCIPAL
+            permissions: {
+              secrets: [
+                'get'
+                'list'
+              ]
+            }
+            tenantId: subscription().tenantId
+          }
         ], !empty(principalId) ? [
           {
             objectId: principalId
@@ -150,10 +218,16 @@ function keyvaultBicep() {
   }
 
   output AZURE_KEY_VAULT_ENDPOINT string = keyVault.properties.vaultUri
-  `
+  `;
 }
 
 function appInsightsBicep() {
+  addEnvVar({
+    name: 'APPINSIGHTS_INSTRUMENTATIONKEY',
+    source: 'bicepOutput',
+    value: 'APPINSIGHTS_INSTRUMENTATIONKEY',
+    moduleName: 'appInsights'
+  });
   return `
   param resourceToken string
   param location string
@@ -1399,13 +1473,13 @@ function appInsightsBicep() {
   output APPINSIGHTS_INSTRUMENTATIONKEY string = appInsights.properties.InstrumentationKey
   output APPINSIGHTS_CONNECTION_STRING string = appInsights.properties.ConnectionString
   
-  `
+  `;
 }
 
 function keyvaultSecrets() {
-  let resources = '';
+  let resources = "";
 
-  for(const [key, value] of Object.entries(secrets)) {
+  for (const [key, value] of Object.entries(secrets)) {
     resources += `
       resource ${key} 'secrets' = {
         name: '${key}'
@@ -1413,20 +1487,22 @@ function keyvaultSecrets() {
           value: ${value.value}
         }
       }
-    `
+    `;
   }
-  
 
   return resources;
 }
 
 function keyvaultParams() {
-  return Object.values(secrets).flatMap(v => v.params.map(p => ({ key: v.value, value: `${p}.outputs.${v.value}`})));
+  return Object.values(secrets).flatMap((v) =>
+    v.params.map((p) => ({ key: v.value, value: `${p}.outputs.${v.value}` }))
+  );
 }
 
 function importBiceps() {
-  let imports = '';
+  let imports = "";
   for (const bicep of biceps) {
+    if (bicep.skipMainLink) continue;
     // todo: need to name these resources better.
     imports += `
       module ${bicep.name} './${bicep.name}.bicep' = {
@@ -1437,12 +1513,63 @@ function importBiceps() {
           principalId: principalId
           resourceToken: resourceToken
           tags: tags
-          ${bicep.params.map(v => `${v.key}: ${v.value}`).join("\n")}
+          ${bicep.params.map((v) => `${v.key}: ${v.value}`).join("\n")}
         }
       }
-      `
+      `;
   }
 
   return imports;
+}
 
+function importEnv() {
+  if (env.length === 0) return '';
+  return `module env './env.bicep' = {
+    name: 'env-\${resourceToken}'
+    scope: resourceGroup
+    params: {
+      location: location
+      principalId: principalId
+      resourceToken: resourceToken
+      tags: tags
+      ${getEnvModuleParams()}
+    }
+  }`;
+}
+
+function envBicep() {
+  return `
+    param location string
+    param principalId string = ''
+    param resourceToken string
+    param tags object
+    ${getEnvModuleParamDecls()}
+    ${envHandlers.map(h => h(env)).join("\n")}
+  `
+}
+
+function getEnvModuleParams() {
+  let params: string[] = [];
+  for (const descriptor of env) {
+    if (descriptor.source === "bicepOutput") {
+      params.push(
+        `${descriptor.name}: ${descriptor.moduleName!}.outputs.${descriptor.value}`
+      );
+    }
+  }
+
+  return params.join("\n");
+}
+
+function getEnvModuleParamDecls() {
+  let params: string[] = [];
+  for (const [name, descriptor] of Object.entries(env)) {
+    if (descriptor.source === "bicepOutput") {
+      params.push(
+        `param ${descriptor.name} string`
+      );
+    }
+  }
+
+  return params.join("\n");
 }
