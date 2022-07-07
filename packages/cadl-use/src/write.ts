@@ -187,12 +187,6 @@ export function writeClientFile(
 
   settingsInterfaceDeclaration += "\n}\n\n";
 
-  output += context.inlineDeclarations;
-
-  output += settingsInterfaceDeclaration;
-
-  context.inlineDeclarations += settingsInterfaceDeclaration;
-
   constructorParameters = ["baseUrl: string | URL", ...constructorParameters];
 
   const settingsBody = constructorParameters
@@ -211,12 +205,30 @@ export function writeClientFile(
   for (const [details, operationBody] of operationBodies) {
     const positionals =
       "\n" + writePositionals(context, details).join(",\n    ");
-    classBody += `\n\n  async ${details.operation.name}(${positionals}) {
+
+    const [responseBodyType] = details.responses
+      .filter((r) => r.statusCode.startsWith("2"))
+      .flatMap((r) => r.responses.map((r) => r.body?.type))
+      .filter((r) => !!r);
+
+    const responseType = !responseBodyType
+      ? "void"
+      : convertToTypeScript(
+          context,
+          responseBodyType,
+          pascalCasify(details.operation.name) + "Result"
+        );
+
+    classBody += `\n\n  async ${details.operation.name}(${positionals}): Promise<${responseType}> {
     ${operationBody}
   }`;
   }
 
   classBody += "\n}";
+
+  context.inlineDeclarations += settingsInterfaceDeclaration;
+
+  output += context.inlineDeclarations;
 
   output += classBody;
 

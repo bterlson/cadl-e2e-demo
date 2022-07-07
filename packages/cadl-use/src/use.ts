@@ -33,14 +33,14 @@ const useDefinition = createDecoratorDefinition({
       optional: false,
     },
   ] as const,
-  target: "Namespace",
+  target: ["Namespace", "Interface"],
 });
 
 const $_use = Symbol("cadl-use::use");
 
 export async function $use(
   context: DecoratorContext,
-  target: NamespaceType,
+  target: NamespaceType | InterfaceType,
   name: string
 ) {
   if (!useDefinition.validate(context, target, [name])) return;
@@ -59,7 +59,7 @@ export async function $use(
 
 export function getUses(
   program: Program,
-  t: NamespaceType
+  t: NamespaceType | InterfaceType
 ): OperationDetails[] {
   return program.stateMap($_use).get(t) ?? [];
 }
