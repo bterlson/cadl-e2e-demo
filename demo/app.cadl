@@ -7,8 +7,6 @@ import "cadl-azure-functions";
 using Cadl.Http;
 
 @serviceTitle("Demo")
-@use("Microsoft.KeyVault.Secrets.getSecret")
-@use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
 namespace DemoApp;
 
 @store("dbName")
@@ -29,6 +27,8 @@ model CommentRequest {
 };
 
 @AzureFunction
+@use("Microsoft.KeyVault.Secrets.getSecret")
+@use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
 @route("/comments")
 interface Comments {
   @post op createComment(@body comment: CommentRequest): OkResponse<Comment>;
@@ -37,6 +37,6 @@ interface Comments {
 }
 
 @AzureStaticWebApp
-@use("Comments")
+@use(Comments)
 interface Static { }
 

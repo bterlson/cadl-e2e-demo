@@ -29,7 +29,7 @@ const useDefinition = createDecoratorDefinition({
   name: "@use",
   args: [
     {
-      kind: "String",
+      kind: ["String", "Namespace", "Interface", "Operation"],
       optional: false,
     },
   ] as const,
@@ -38,15 +38,18 @@ const useDefinition = createDecoratorDefinition({
 
 const $_use = Symbol("cadl-use::use");
 
+type UseScope = NamespaceType | InterfaceType;
+type UseSelector = string | NamespaceType | OperationType | InterfaceType;
+
 export async function $use(
   context: DecoratorContext,
-  target: NamespaceType | InterfaceType,
-  name: string
+  target: UseScope,
+  selector: UseSelector
 ) {
-  if (!useDefinition.validate(context, target, [name])) return;
+  if (!useDefinition.validate(context, target, [selector as any])) return;
 
   let value = context.program.stateMap($_use).get(target) as
-    | string[]
+    | UseSelector[]
     | undefined;
 
   if (!value) {
@@ -54,7 +57,7 @@ export async function $use(
     context.program.stateMap($_use).set(target, value);
   }
 
-  value.push(name);
+  value.push(selector);
 }
 
 export function getUses(
@@ -73,10 +76,21 @@ export async function $onEmit(program: Program): Promise<void> {
   if (apps.length === 0) return;
 
   const resolutions = await Promise.all(
-    (apps as [NamespaceType, string[]][]).flatMap(([appNamespace, selectors]) =>
-      selectors.map((selector) =>
-        resolveSelector(program, appNamespace, selector)
-      )
+    (apps as [UseScope, UseSelector[]][]).flatMap(([appNamespace, selectors]) =>
+      selectors.map((selector) => {
+        if (typeof selector === "string") {
+          return resolveSelector(program, appNamespace, selector);
+        } else {
+          const resolution: UseResolution = {
+            name: selector.name,
+            ns: selector.namespace!.name,
+            program,
+            type: selector,
+          };
+
+          return resolution;
+        }
+      })
     )
   );
 
@@ -116,7 +130,7 @@ const KNOWN_SCHEMA_PREFIXES = {
 
 async function resolveSelector(
   hostProgram: Program,
-  appNamespace: NamespaceType,
+  scope: UseScope,
   name: string
 ): Promise<UseResolution> {
   let selectedSchema = Object.entries(KNOWN_SCHEMA_PREFIXES).find(([prefix]) =>
@@ -150,10 +164,7 @@ async function resolveSelector(
     ) as UseResolution["type"];
   } else {
     // No well-known schema was selected, so try to resolve it relative to the host program.
-    type = select(
-      appNamespace.namespace,
-      name.split(".")
-    ) as UseResolution["type"];
+    type = select(scope.namespace, name.split(".")) as UseResolution["type"];
   }
 
   if (!type) {
@@ -164,12 +175,21 @@ async function resolveSelector(
     );
   }
 
-  return {
+  const output = {
     name,
-    ns: hostProgram.checker.getNamespaceString(appNamespace),
+    ns:
+      scope.kind === "Namespace"
+        ? hostProgram.checker.getNamespaceString(scope)
+        : hostProgram.checker.getNamespaceString(scope.namespace) +
+          "." +
+          scope.name,
     type,
     program,
   };
+
+  if (output.ns.startsWith(".")) output.ns = output.ns.slice(1);
+
+  return output;
 }
 
 interface UseResolution {
