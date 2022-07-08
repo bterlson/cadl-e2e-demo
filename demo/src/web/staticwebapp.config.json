@@ -1,6 +1,6 @@
 {
   "globalHeaders": {
-    "Access-Control-Allow-Origin": "https://app-api-rnknowjwlgiqa.azurewebsites.net",
+    "Access-Control-Allow-Origin": "https://*.azurewebsites.net",
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS"
   }
 }
