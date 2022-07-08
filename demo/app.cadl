@@ -33,7 +33,6 @@ model CommentRequest {
 interface Comments {
   @post op createComment(@body comment: CommentRequest): OkResponse<Comment>;
   @get op getComment(@path id: string): OkResponse<Comment>;
-  @get op listComments(): OkResponse<Comment[]>;
 }
 
 @AzureStaticWebApp
