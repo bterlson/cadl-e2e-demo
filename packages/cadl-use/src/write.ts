@@ -356,6 +356,13 @@ export function writePositionals(
     );
   }
 
+  if (details.parameters.body) {
+    const { typeName } = context.parameterMap.get(details.parameters.body)!;
+    positionalParams.push(
+      `${camelCasify(details.parameters.body.name)}: ${typeName}`
+    );
+  }
+
   if (optionalParams.length > 0) {
     const optionsBag = context.program.checker.createAndFinishType({
       kind: "Model",
@@ -379,13 +386,6 @@ export function writePositionals(
 
     positionalParams.push(
       `options: ${convertToTypeScript(context, optionsBag)} = {}`
-    );
-  }
-
-  if (details.parameters.body) {
-    const { typeName } = context.parameterMap.get(details.parameters.body)!;
-    positionalParams.push(
-      `${camelCasify(details.parameters.body.name)}: ${typeName}`
     );
   }
 
