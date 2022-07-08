@@ -36,6 +36,5 @@ interface Comments {
 }
 
 @AzureStaticWebApp
-@use("Comments")
 interface Static { }
 
