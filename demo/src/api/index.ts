@@ -20,27 +20,6 @@ await store.init();
 
 const languageUrl = process.env.LANGUAGE_ENDPOINT!;
 
-Host.createComment = async function (comment) {
-  const result = await analyzeSentiment(languageUrl, credential, {
-    documents: [
-      {
-        id: "1",
-        text: comment.contents,
-        language: "en",
-      },
-    ],
-  });
-
-  const sentiment =
-    result.documents.find(({ id }) => id === "1")?.sentiment ?? "unknown";
-
-  const createdComment = await store.Comment.add({ ...comment, sentiment });
-  return {
-    statusCode: 200,
-    body: createdComment,
-  };
-};
-
 Host.getComment = async function (id) {
   const comment = await store.Comment.get(id);
   return {
