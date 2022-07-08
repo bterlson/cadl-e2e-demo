@@ -100,5 +100,5 @@
     "skipLibCheck": true /* Skip type checking all .d.ts files. */
   },
   "include": ["./**/*.ts"],
-  "exclude": ["node_modules/", "build/"]
+  "exclude": ["node_modules/", "build/", "./staticwebapp.config.json"]
 }

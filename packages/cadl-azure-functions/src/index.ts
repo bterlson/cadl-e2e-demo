@@ -18,7 +18,12 @@ import {
 import "./lib.js";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
-import { addBicepFile, addService, handleEnv } from "cadl-azure-accelerators";
+import {
+  addBicepFile,
+  addOutput,
+  addService,
+  handleEnv,
+} from "cadl-azure-accelerators";
 
 const functionKey = Symbol();
 const functionDecorator = createDecoratorDefinition({
@@ -406,6 +411,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
       }
       
       output API_PRINCIPAL string = api.identity.principalId
+      output FUNCTION_ENDPOINT string = api.properties.defaultHostName
     `,
       [
         {
@@ -414,6 +420,8 @@ function createFunctionsEmitter(program: Program, basePath: string) {
         },
       ]
     );
+
+    addOutput("API_ENDPOINT", "string", "functions.outputs.FUNCTION_ENDPOINT");
 
     addBicepFile(
       "getFnEnv",
