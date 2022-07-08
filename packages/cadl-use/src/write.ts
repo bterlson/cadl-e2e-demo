@@ -87,11 +87,16 @@ function normalizeParameters(
     parameters: { parameters, body },
     operation,
   } of operations) {
-    for (const mtp of parameters.map(({ param }) => param)) {
+    for (const parameter of parameters) {
+      const mtp = parameter.param;
       const isClientParameter = clientParameters.has(mtp);
       let location = camelCasify(mtp.name);
       if (mtp.optional) {
         location = "options." + location;
+        if (parameter.type === "path") {
+          // Optional path parameters need to default to empty
+          location += ' ?? ""';
+        }
       }
       if (isClientParameter) {
         location = "this._settings." + location;
@@ -287,9 +292,9 @@ export function writeOperationBody(
   }
 
   return `const path = \`${fragmentReplacer}\`;${addQueryParams}
-    const resource = new URL(${endpoint}, ${
-    context.isClient ? "this._settings.baseUrl" : "baseUrl"
-  }).toString();
+    const resource = new URL(${
+      context.isClient ? "this._settings.baseUrl" : "baseUrl"
+    } + ${endpoint}).toString();
     ${authorizeBlock}
     const res = await fetch(resource, {
         method: "${method}",
@@ -400,12 +405,18 @@ export function writeOperationFile(
 
   const context = createWriterContext(program, securityDefinition);
 
-  for (const { param } of details.parameters.parameters) {
+  for (const { param, type } of details.parameters.parameters) {
+    let location = param.optional
+      ? "options." + camelCasify(param.name)
+      : camelCasify(param.name);
+
+    if (param.optional && type === "path") {
+      location += ' ?? ""';
+    }
+
     context.parameterMap.set(param, {
       disposition: "operation",
-      location: param.optional
-        ? "options." + camelCasify(param.name)
-        : camelCasify(param.name),
+      location,
       typeName: convertToTypeScript(context, param.type),
     });
   }

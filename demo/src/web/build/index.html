@@ -5,7 +5,13 @@
     </head>
     <body>
         <h1>Demo Application</h1>
-        <li id="comments"></li>
-        <script type="text/javascript">document.onload = () => { refreshComments(); }</script>
+        <div style="float: right; width: 30%">
+            <textarea id="commentText" style="width: 100%; height: 5rem;"></textarea>
+            <br />
+            <button id="commentSubmit" onclick="window.submitComment()">Add Comment</button></div>
+        <ul id="comments"></ul>
+        <script type="text/javascript">
+          document.addEventListener("DOMContentLoaded",() => { window.refreshComments(); })
+        </script>
     </body>
 </html> 
