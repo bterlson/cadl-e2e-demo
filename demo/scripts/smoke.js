@@ -11,7 +11,7 @@ await cp("cadl-output/use/comments", "./src/api/use", {
   recursive: true,
   force: true,
 });
-await cp("cadl-output/use/static", "./src/web/src/use", {
+await cp("cadl-output/use/demoapp", "./src/web/src/use", {
   recursive: true,
   force: true,
 });
