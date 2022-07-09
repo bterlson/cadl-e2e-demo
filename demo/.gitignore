@@ -2,14 +2,3 @@
 .azure
 
 .env
-
-azure.yaml
-infra/
-openapi.json
-src/api/Host.ts
-src/api/createComment/
-src/api/getComment/
-src/api/listComments/
-src/api/store/
-src/api/use/
-src/web/src/use
