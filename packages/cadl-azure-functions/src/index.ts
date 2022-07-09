@@ -8,35 +8,47 @@ import {
   getIntrinsicModelName,
   Type,
   ModelType,
-  ArrayType
+  ArrayType,
 } from "@cadl-lang/compiler";
-import { getAllRoutes, getHeaderFieldName, OperationDetails } from "@cadl-lang/rest/http";
+import {
+  getAllRoutes,
+  getHeaderFieldName,
+  OperationDetails,
+} from "@cadl-lang/rest/http";
 import "./lib.js";
 import path from "path";
 import { writeFile, mkdir } from "fs/promises";
-import { addBicepFile, addService, handleEnv } from "cadl-azure-accelerators";
+import {
+  addBicepFile,
+  addOutput,
+  addService,
+  handleEnv,
+} from "cadl-azure-accelerators";
 
 const functionKey = Symbol();
 const functionDecorator = createDecoratorDefinition({
   name: "@AzureFunction",
   target: ["Namespace", "Interface", "Operation"],
   args: [],
-} as any); // hopefully this any cast isn't needed in latest cadl? 
+} as any); // hopefully this any cast isn't needed in latest cadl?
 
-type FunctionStateMap = Map<NamespaceType | InterfaceType | OperationType, true>;
+type FunctionStateMap = Map<
+  NamespaceType | InterfaceType | OperationType,
+  true
+>;
 
 export function getFunctionState(p: Program): FunctionStateMap {
   return p.stateMap(functionKey) as FunctionStateMap;
 }
 
-export function isAzureFunction(p: Program, t: NamespaceType | InterfaceType | OperationType) {
+export function isAzureFunction(
+  p: Program,
+  t: NamespaceType | InterfaceType | OperationType
+) {
   return !!getFunctionState(p).get(t);
 }
 
-export function $AzureFunction(
-  context: DecoratorContext,
-  t: NamespaceType
-) {
+export function $AzureFunction(context: DecoratorContext, t: NamespaceType) {
   if (!functionDecorator.validate(context, t, [])) {
     return;
   }
@@ -54,7 +66,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
   const apiPath = path.join(basePath, "api");
 
   return {
-    emit
+    emit,
   };
 
   async function emit() {
@@ -65,7 +77,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
   }
 
   async function emitFunctionApp() {
-    await mkdir(apiPath, { recursive: true});
+    await mkdir(apiPath, { recursive: true });
     await emitHostJson();
     const [routes] = getAllRoutes(program);
 
@@ -80,7 +92,8 @@ function createFunctionsEmitter(program: Program, basePath: string) {
     if (isAzureFunction(program, operation.operation)) {
       return true;
     }
-    let container: NamespaceType | InterfaceType | undefined = operation.container;
+    let container: NamespaceType | InterfaceType | undefined =
+      operation.container;
     while (container) {
       if (isAzureFunction(program, container)) {
         return true;
@@ -97,20 +110,23 @@ function createFunctionsEmitter(program: Program, basePath: string) {
     await mkdir(functionDir, { recursive: true });
 
     const fnsJson = {
-      bindings: [{
-        authLevel: "anonymous",
-        type: "httpTrigger",
-        direction: "in",
-        name: "req",
-        methods: [operation.verb],
-        route: operation.path.slice(1) // slice off slash.
-      }, {
-        type: "http", 
-        direction: "out",
-        name: "res"
-      }],
-      scriptFile: `../dist/${operation.operation.name}/index.js`
-    }
+      bindings: [
+        {
+          authLevel: "anonymous",
+          type: "httpTrigger",
+          direction: "in",
+          name: "req",
+          methods: [operation.verb],
+          route: operation.path.slice(1), // slice off slash.
+        },
+        {
+          type: "http",
+          direction: "out",
+          name: "res",
+        },
+      ],
+      scriptFile: `../dist/${operation.operation.name}/index.js`,
+    };
     let functionJsonCode = JSON.stringify(fnsJson);
 
     await writeFile(path.join(functionDir, "function.json"), functionJsonCode);
@@ -125,7 +141,9 @@ function createFunctionsEmitter(program: Program, basePath: string) {
 
     const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
        ${argMarshalling}
-       const _result = await Host.${operation.operation.name}(${params.join(",")});
+       const _result = await Host.${operation.operation.name}(${params.join(
+      ","
+    )});
        ${getReturnValueMarshalling(operation)}
     };
     export default httpTrigger;`;
@@ -134,7 +152,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
   }
 
   function getArgMarshalling(operation: OperationDetails): [string, string[]] {
-    let marshallingCode = '';
+    let marshallingCode = "";
     let params: string[] = [];
     // get header, query, and path params
     for (const param of operation.parameters.parameters) {
@@ -150,9 +168,9 @@ function createFunctionsEmitter(program: Program, basePath: string) {
                 body: "Missing required query parameter ${param.name}"
               }
               return;
-            }`
+            }`;
           }
-    
+
           if (isNumber(paramType)) {
             if (cadlParam.optional) {
               marshallingCode += `const ${param.name} = req.query.${param.name} ? Number(req.query.${param.name}) : undefined;`;
@@ -162,9 +180,9 @@ function createFunctionsEmitter(program: Program, basePath: string) {
           } else if (isString(paramType)) {
             marshallingCode += `const ${param.name} = req.query.${param.name};`;
           } else if (isBoolean(paramType)) {
-            marshallingCode += `const ${param.name} = req.query.${param.name} === "true";`
+            marshallingCode += `const ${param.name} = req.query.${param.name} === "true";`;
           } else {
-            throw new Error("unsupported query string type")
+            throw new Error("unsupported query string type");
           }
           params.push(param.name);
           break;
@@ -177,22 +195,21 @@ function createFunctionsEmitter(program: Program, basePath: string) {
                 body: "Missing required query parameter ${headerInfo}"
               }
               return;
-            }`
+            }`;
           }
-    
+
           if (isNumber(paramType)) {
             if (cadlParam.optional) {
               marshallingCode += `const ${param.name} = req.headers["${headerInfo}"] ? Number(req.headers["${headerInfo}"]) : undefined;`;
             } else {
               marshallingCode += `const ${param.name} = Number(req.headers["${headerInfo}"]);`;
             }
-            
           } else if (isString(paramType)) {
             marshallingCode += `const ${param.name} = req.headers["${headerInfo}"];`;
           } else if (isBoolean(paramType)) {
-            marshallingCode += `const ${param.name} = req.headers["${headerInfo}"] === "true";`
+            marshallingCode += `const ${param.name} = req.headers["${headerInfo}"] === "true";`;
           } else {
-            throw new Error("unsupported header type")
+            throw new Error("unsupported header type");
           }
           params.push(param.name);
           break;
@@ -216,7 +233,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
 
   function getReturnValueMarshalling(op: OperationDetails): string {
     // just a stub that assumes OkResponse<T> for now.
-    return  `context.res = {
+    return `context.res = {
       status: _result.statusCode,
       body: (_result as any).body
     } `;
@@ -230,7 +247,11 @@ function createFunctionsEmitter(program: Program, basePath: string) {
 
     for (const operation of routes) {
       if (isInsideFunctionApp(operation)) {
-        hostHooks.push(`${operation.operation.name}: ${interfaceEmitter.getTypeReference(operation.operation)}`)
+        hostHooks.push(
+          `${operation.operation.name}: ${interfaceEmitter.getTypeReference(
+            operation.operation
+          )}`
+        );
       }
     }
 
@@ -242,12 +263,11 @@ function createFunctionsEmitter(program: Program, basePath: string) {
       ${interfaceEmitter.getTypeDecls().join("\n")}
 
       export const Host: HostHooks = {} as any;
-    `
+    `;
 
-    
     await writeFile(path.join(apiPath, "Host.ts"), serverSideHost);
   }
-  
+
   async function emitHostJson() {
     let hostCode = `
     {
@@ -277,9 +297,9 @@ function createFunctionsEmitter(program: Program, basePath: string) {
       host: "function",
     });
   }
-  
+
   function emitFunctionsBicep() {
-    const name = "app-api-\${resourceToken}";
+    const name = "app-api-${resourceToken}";
     addBicepFile(
       "functions",
       `
@@ -309,7 +329,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
             cors: {
               allowedOrigins: [
                 'https://ms.portal.azure.com'
-                'https://\${WEB_URI}'
+                '\${WEB_URI}'
               ]
             }
           }
@@ -391,6 +411,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
       }
       
       output API_PRINCIPAL string = api.identity.principalId
+      output FUNCTION_ENDPOINT string = api.properties.defaultHostName
     `,
       [
         {
@@ -400,12 +421,20 @@ function createFunctionsEmitter(program: Program, basePath: string) {
       ]
     );
 
-    addBicepFile("getFnEnv", `
+    addOutput("API_ENDPOINT", "string", "functions.outputs.FUNCTION_ENDPOINT");
+
+    addBicepFile(
+      "getFnEnv",
+      `
     param resourceToken string
     output fnAppSettings object = list('Microsoft.Web/sites/${name}/config/appsettings', '2020-12-01').properties    
-    `, [], true);
-      
-    handleEnv(env => `
+    `,
+      [],
+      true
+    );
+
+    handleEnv(
+      (env) => `
       module getFnEnv './getFnEnv.bicep' = {
         name: 'getFnEnv'
         params: {
@@ -416,24 +445,25 @@ function createFunctionsEmitter(program: Program, basePath: string) {
       resource fnConfig 'Microsoft.Web/sites/config@2020-12-01' = {
         name: '${name}/appsettings'
         properties: union(getFnEnv.outputs.fnAppSettings, {
-            ${env.map(e => `${e.name}: ${e.value}`).join("\n")}
+            ${env.map((e) => `${e.name}: ${e.value}`).join("\n")}
           })
       }    
-    `)
+    `
+    );
   }
 
   function isNumber(type: Type) {
     const t = getIntrinsicModelName(program, type);
     if (!t) return false;
-    return ['int16', 'int32', 'float16', 'float32'].includes(t);
+    return ["int16", "int32", "float16", "float32"].includes(t);
   }
-  
+
   function isString(type: Type) {
-    return getIntrinsicModelName(program, type) === 'string';
+    return getIntrinsicModelName(program, type) === "string";
   }
-  
+
   function isBoolean(type: Type) {
-    return getIntrinsicModelName(program, type) === 'boolean';
+    return getIntrinsicModelName(program, type) === "boolean";
   }
 }
 
@@ -447,15 +477,14 @@ const instrinsicNameToTSType = new Map<string, string>([
   ["boolean", "boolean"],
 ]);
 
-
 function createTSInterfaceEmitter(program: Program) {
   let typeDecls: string[] = [];
   const knownTypes = new Map<Type, string>();
 
   return {
     getTypeReference,
-    getTypeDecls
-  }
+    getTypeDecls,
+  };
 
   function getTypeDecls() {
     return typeDecls;
@@ -489,8 +518,10 @@ function createTSInterfaceEmitter(program: Program) {
     const ref = type.name;
     // todo: this is always async, but to generalize it should not be the case.
     let str = `interface ${type.name} {
-      (${generateOperationParameters(type)}): Promise<${getTypeReference(type.returnType)}>
-    }`
+      (${generateOperationParameters(type)}): Promise<${getTypeReference(
+      type.returnType
+    )}>
+    }`;
 
     typeDecls.push(str);
     knownTypes.set(type, ref);
@@ -501,7 +532,11 @@ function createTSInterfaceEmitter(program: Program) {
   function generateOperationParameters(type: OperationType): string {
     let params: string[] = [];
     for (const param of type.parameters.properties.values()) {
-      params.push(`${param.name}${param.optional ? '?' : ''}: ${getTypeReference(param.type)}`)
+      params.push(
+        `${param.name}${param.optional ? "?" : ""}: ${getTypeReference(
+          param.type
+        )}`
+      );
     }
 
     return params.join(", ");
@@ -527,9 +562,7 @@ function createTSInterfaceEmitter(program: Program) {
       // why is this called _ :(
       const name = prop.name === "_" ? "statusCode" : prop.name;
       props.push(
-        `${name}${prop.optional ? "?" : ""}: ${getTypeReference(
-          prop.type
-        )}`
+        `${name}${prop.optional ? "?" : ""}: ${getTypeReference(prop.type)}`
       );
     }
 
@@ -574,4 +607,3 @@ function createTSInterfaceEmitter(program: Program) {
     return type.name + parameterNames.join("");
   }
 }
-

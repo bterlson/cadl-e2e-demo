@@ -162,12 +162,8 @@ export async function $onEmit(p: Program) {
 `
   );
 
+  await writeFile(path.join(infraDir, "env.bicep"), envBicep());
 
-  await writeFile(
-    path.join(infraDir, "env.bicep"),
-    envBicep()
-  )
-  
   await writeFile(
     path.join(p.compilerOptions.outputPath, "azure.yaml"),
     azureYaml()
@@ -185,10 +181,10 @@ ${stringify(yaml)}
 
 function keyvaultBicep() {
   addEnvVar({
-    name: 'AZURE_KEY_VAULT_ENDPOINT',
-    source: 'bicepOutput',
-    value: 'AZURE_KEY_VAULT_ENDPOINT',
-    moduleName: 'keyvault'
+    name: "AZURE_KEY_VAULT_ENDPOINT",
+    source: "bicepOutput",
+    value: "AZURE_KEY_VAULT_ENDPOINT",
+    moduleName: "keyvault",
   });
   return `
   param location string
@@ -244,10 +240,10 @@ function keyvaultBicep() {
 
 function appInsightsBicep() {
   addEnvVar({
-    name: 'APPINSIGHTS_INSTRUMENTATIONKEY',
-    source: 'bicepOutput',
-    value: 'APPINSIGHTS_INSTRUMENTATIONKEY',
-    moduleName: 'appInsights'
+    name: "APPINSIGHTS_INSTRUMENTATIONKEY",
+    source: "bicepOutput",
+    value: "APPINSIGHTS_INSTRUMENTATIONKEY",
+    moduleName: "appInsights",
   });
   return `
   param resourceToken string
@@ -1544,7 +1540,7 @@ function importBiceps() {
 }
 
 function importEnv() {
-  if (env.length === 0) return '';
+  if (env.length === 0) return "";
   return `module env './env.bicep' = {
     name: 'env-\${resourceToken}'
     scope: resourceGroup
@@ -1565,8 +1561,8 @@ function envBicep() {
     param resourceToken string
     param tags object
     ${getEnvModuleParamDecls()}
-    ${envHandlers.map(h => h(env)).join("\n")}
-  `
+    ${envHandlers.map((h) => h(env)).join("\n")}
+  `;
 }
 
 function getEnvModuleParams() {
@@ -1574,7 +1570,9 @@ function getEnvModuleParams() {
   for (const descriptor of env) {
     if (descriptor.source === "bicepOutput") {
       params.push(
-        `${descriptor.name}: ${descriptor.moduleName!}.outputs.${descriptor.value}`
+        `${descriptor.name}: ${descriptor.moduleName!}.outputs.${
+          descriptor.value
+        }`
       );
     }
   }
@@ -1586,9 +1584,7 @@ function getEnvModuleParamDecls() {
   let params: string[] = [];
   for (const [name, descriptor] of Object.entries(env)) {
     if (descriptor.source === "bicepOutput") {
-      params.push(
-        `param ${descriptor.name} string`
-      );
+      params.push(`param ${descriptor.name} string`);
     }
   }
 

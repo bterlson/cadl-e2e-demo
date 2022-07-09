@@ -27,3 +27,10 @@ Host.getComment = async function (id) {
     body: comment!,
   };
 };
+
+Host.listComments = async function () {
+  return {
+    statusCode: 200,
+    body: await store.Comment.findAll(),
+  };
+};
