@@ -12,9 +12,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@cadl-lang/compiler": "^0.32.0",
+    "@cadl-lang/compiler": "latest",
     "cadl-azure-accelerators": "workspace:*",
-    "@cadl-lang/rest": "~0.15.0"
+    "@cadl-lang/rest": "latest"
   },
   "devDependencies": {
     "typescript": "~4.7.4"

@@ -12,7 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@cadl-lang/compiler": "^0.32.0",
+    "@cadl-lang/compiler": "latest",
     "yaml": "~2.1.1"
   },
   "devDependencies": {

@@ -28,9 +28,31 @@ Host.getComment = async function (id) {
   };
 };
 
-Host.listComments = async function () {
+Host.createComment = async function (comment) {
+  const result = await analyzeSentiment(languageUrl, credential, {
+    documents: [
+      {
+        id: "1",
+        text: comment.contents,
+        language: "en",
+      },
+    ],
+  });
+
+  const sentiment =
+    result.documents.find(({ id }) => id === "1")?.sentiment ?? "unknown";
+  const commentWithSentiment = { ... comment, sentiment };
+  const savedComment = await store.Comment.add(commentWithSentiment);
   return {
     statusCode: 200,
-    body: await store.Comment.findAll(),
-  };
-};
+    body: savedComment
+  }
+}
+
+Host.listComments = async function() {
+  const comments = await store.Comment.findAll();
+  return {
+    statusCode: 200,
+    body: comments
+  }
+}

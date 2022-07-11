@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@cadl-lang/compiler": "^0.32.0"
+    "@cadl-lang/compiler": "latest"
   },
   "devDependencies": {
     "typescript": "~4.7.4"
