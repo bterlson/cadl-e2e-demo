@@ -1,16 +1,14 @@
 import {
   Program,
   EmitOptionsFor,
-  navigateProgram,
   Type,
   DecoratorContext,
-  ModelType,
-  ModelTypeProperty,
-  ArrayType,
+  Model,
+  ModelProperty,
   getIntrinsicModelName,
   createDecoratorDefinition,
-  StringLiteralType,
   isKey,
+  isArrayModelType
 } from "@cadl-lang/compiler";
 import { DataStoreLibrary } from "./lib.js";
 import { mkdir, writeFile } from "fs/promises";
@@ -34,7 +32,7 @@ const storeDecorator = createDecoratorDefinition({
 } as const);
 
 type StoreStateMap = Map<
-  ModelType,
+  Model,
   { databaseName: string; collectionName: string | undefined }
 >;
 
@@ -44,7 +42,7 @@ function getStoreState(p: Program): StoreStateMap {
 
 export function $store(
   context: DecoratorContext,
-  t: ModelType,
+  t: Model,
   databaseName: string,
   collectionName: string
 ) {
@@ -233,7 +231,7 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     return code;
   }
   
-  function getKeyFields(model: ModelType) {
+  function getKeyFields(model: Model) {
     for (const prop of model.properties.values()) {
       if (isKey(p, prop)) {
         return `"${prop.name}"`;
@@ -258,9 +256,11 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
 
     switch (type.kind) {
       case "Model":
-        return generateModelType(type);
-      case "Array":
-        return generateArrayType(type);
+        if (isArrayModelType(p, type)) {
+          return generateArrayType(type);
+        } else {
+          return generateModel(type);
+        }
       case "Number":
         return type.value.toString();
       case "String":
@@ -273,11 +273,11 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     }
   }
 
-  function generateArrayType(type: ArrayType) {
-    return `${getTypeReference(type.elementType)}[]`;
+  function generateArrayType(type: Model) {
+    return `${getTypeReference(type.indexer!.value!)}[]`;
   }
 
-  function generateModelType(type: ModelType): string {
+  function generateModel(type: Model): string {
     const intrinsicName = getIntrinsicModelName(p, type);
     if (intrinsicName) {
       if (!instrinsicNameToTSType.has(intrinsicName)) {
@@ -310,7 +310,7 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     return typeRef;
   }
 
-  function getModelDeclarationName(type: ModelType): string {
+  function getModelDeclarationName(type: Model): string {
     if (
       type.templateArguments === undefined ||
       type.templateArguments.length === 0
@@ -322,11 +322,15 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     const parameterNames = type.templateArguments.map((t) => {
       switch (t.kind) {
         case "Model":
-          return getModelDeclarationName(t);
-        case "Array":
-          if (t.elementType.kind === "Model") {
-            return getModelDeclarationName(t.elementType) + "Array";
+          if (isArrayModelType(p, type)) {
+            const elementType = type.indexer!.value!
+            if (elementType.kind === "Model") {
+              return getModelDeclarationName(elementType) + "Array";
+            }
+          } else {
+            return getModelDeclarationName(t);
           }
+          
         // fallthrough
         default:
           throw new Error(
@@ -338,5 +342,5 @@ function createTsEmitter(p: Program, options: DataStoreEmitterOptions) {
     return type.name + parameterNames.join("");
   }
 
-  function getModelProperty(model: ModelTypeProperty) {}
+  function getModelProperty(model: ModelProperty) {}
 }

@@ -21,7 +21,6 @@
     "cadl-azure-accelerators": "workspace:*",
     "cadl-azure-functions": "workspace:*",
     "cadl-data-store": "workspace:*",
-    "cadl-use": "workspace:*",
     "dotenv": "^16.0.1",
     "node-fetch": "~3.2.6",
     "@cadl-lang/openapi3": "latest",

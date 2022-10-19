@@ -1,19 +1,19 @@
 import {
   createDecoratorDefinition,
   DecoratorContext,
-  InterfaceType,
-  NamespaceType,
-  OperationType,
+  Interface,
+  Namespace,
+  Operation,
   Program,
   getIntrinsicModelName,
   Type,
-  ModelType,
-  ArrayType,
+  Model,
+  isArrayModelType,
 } from "@cadl-lang/compiler";
 import {
-  getAllRoutes,
+  getAllHttpServices,
   getHeaderFieldName,
-  OperationDetails,
+  HttpOperation,
 } from "@cadl-lang/rest/http";
 import "./lib.js";
 import path from "path";
@@ -33,7 +33,7 @@ const functionDecorator = createDecoratorDefinition({
 } as any); // hopefully this any cast isn't needed in latest cadl?
 
 type FunctionStateMap = Map<
-  NamespaceType | InterfaceType | OperationType,
+  Namespace | Interface | Operation,
   true
 >;
 
@@ -43,12 +43,12 @@ export function getFunctionState(p: Program): FunctionStateMap {
 
 export function isAzureFunction(
   p: Program,
-  t: NamespaceType | InterfaceType | OperationType
+  t: Namespace | Interface | Operation
 ) {
   return !!getFunctionState(p).get(t);
 }
 
-export function $AzureFunction(context: DecoratorContext, t: NamespaceType) {
+export function $AzureFunction(context: DecoratorContext, t: Namespace) {
   if (!functionDecorator.validate(context, t, [])) {
     return;
   }
@@ -79,7 +79,8 @@ function createFunctionsEmitter(program: Program, basePath: string) {
   async function emitFunctionApp() {
     await mkdir(apiPath, { recursive: true });
     await emitHostJson();
-    const [routes] = getAllRoutes(program);
+    const [services] = getAllHttpServices(program);
+    const routes = services[0].operations;
 
     for (const operation of routes) {
       if (isInsideFunctionApp(operation)) {
@@ -88,11 +89,11 @@ function createFunctionsEmitter(program: Program, basePath: string) {
     }
   }
 
-  function isInsideFunctionApp(operation: OperationDetails) {
+  function isInsideFunctionApp(operation: HttpOperation) {
     if (isAzureFunction(program, operation.operation)) {
       return true;
     }
-    let container: NamespaceType | InterfaceType | undefined =
+    let container: Namespace | Interface | undefined =
       operation.container;
     while (container) {
       if (isAzureFunction(program, container)) {
@@ -105,7 +106,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
     return false;
   }
 
-  async function emitFunction(operation: OperationDetails) {
+  async function emitFunction(operation: HttpOperation) {
     const functionDir = path.join(apiPath, operation.operation.name);
     await mkdir(functionDir, { recursive: true });
 
@@ -151,7 +152,7 @@ function createFunctionsEmitter(program: Program, basePath: string) {
     await writeFile(path.join(functionDir, "index.ts"), indexCode);
   }
 
-  function getArgMarshalling(operation: OperationDetails): [string, string[]] {
+  function getArgMarshalling(operation: HttpOperation): [string, string[]] {
     let marshallingCode = "";
     let params: string[] = [];
     // get header, query, and path params
@@ -224,14 +225,15 @@ function createFunctionsEmitter(program: Program, basePath: string) {
     // rather than last.
 
     // get body param
-    if (operation.parameters.body) {
-      marshallingCode += `const ${operation.parameters.body.name} = req.body;`;
-      params.push(operation.parameters.body.name);
+    if (operation.parameters.bodyParameter) {
+      const name = operation.parameters.bodyParameter.name;
+      marshallingCode += `const ${name} = req.body;`;
+      params.push(name);
     }
     return [marshallingCode, params];
   }
 
-  function getReturnValueMarshalling(op: OperationDetails): string {
+  function getReturnValueMarshalling(op: HttpOperation): string {
     // just a stub that assumes OkResponse<T> for now.
     return `context.res = {
       status: _result.statusCode,
@@ -241,8 +243,8 @@ function createFunctionsEmitter(program: Program, basePath: string) {
 
   async function emitServerSideHost() {
     const interfaceEmitter = createTSInterfaceEmitter(program);
-
-    const [routes] = getAllRoutes(program);
+    const [services] = getAllHttpServices(program);
+    const routes = services[0].operations;
     let hostHooks: string[] = [];
 
     for (const operation of routes) {
@@ -497,9 +499,11 @@ function createTSInterfaceEmitter(program: Program) {
 
     switch (type.kind) {
       case "Model":
-        return generateModelType(type);
-      case "Array":
-        return generateArrayType(type);
+        if (isArrayModelType(program, type)) {
+          return generateArrayType(type);
+        } else {
+          return generateModel(type);
+        }
       case "Number":
         return type.value.toString();
       case "String":
@@ -507,14 +511,14 @@ function createTSInterfaceEmitter(program: Program) {
       case "Union":
         return type.options.map(getTypeReference).join("|");
       case "Operation":
-        return generateOperationType(type);
+        return generateOperation(type);
       default:
         // todo: diagnostic
         return "{}";
     }
   }
 
-  function generateOperationType(type: OperationType): string {
+  function generateOperation(type: Operation): string {
     const ref = type.name;
     // todo: this is always async, but to generalize it should not be the case.
     let str = `interface ${type.name} {
@@ -529,7 +533,7 @@ function createTSInterfaceEmitter(program: Program) {
     return ref;
   }
 
-  function generateOperationParameters(type: OperationType): string {
+  function generateOperationParameters(type: Operation): string {
     let params: string[] = [];
     for (const param of type.parameters.properties.values()) {
       params.push(
@@ -542,11 +546,11 @@ function createTSInterfaceEmitter(program: Program) {
     return params.join(", ");
   }
 
-  function generateArrayType(type: ArrayType) {
-    return `${getTypeReference(type.elementType)}[]`;
+  function generateArrayType(type: Model) {
+    return `${getTypeReference(type.indexer!.value!)}[]`;
   }
 
-  function generateModelType(type: ModelType): string {
+  function generateModel(type: Model): string {
     const intrinsicName = getIntrinsicModelName(program, type);
     if (intrinsicName) {
       if (!instrinsicNameToTSType.has(intrinsicName)) {
@@ -579,7 +583,7 @@ function createTSInterfaceEmitter(program: Program) {
     return typeRef;
   }
 
-  function getModelDeclarationName(type: ModelType): string {
+  function getModelDeclarationName(type: Model): string {
     if (
       type.templateArguments === undefined ||
       type.templateArguments.length === 0
@@ -591,11 +595,15 @@ function createTSInterfaceEmitter(program: Program) {
     const parameterNames = type.templateArguments.map((t) => {
       switch (t.kind) {
         case "Model":
-          return getModelDeclarationName(t);
-        case "Array":
-          if (t.elementType.kind === "Model") {
-            return getModelDeclarationName(t.elementType) + "Array";
+          if (isArrayModelType(program, type)) {
+            const elementType = type.indexer!.value!
+            if (elementType.kind === "Model") {
+              return getModelDeclarationName(elementType);
+            }
+          } else {
+            return getModelDeclarationName(t);
           }
+          
         // fallthrough
         default:
           throw new Error(
@@ -603,7 +611,6 @@ function createTSInterfaceEmitter(program: Program) {
           );
       }
     });
-
-    return type.name + parameterNames.join("");
+    return  parameterNames.join("") + type.name;
   }
 }

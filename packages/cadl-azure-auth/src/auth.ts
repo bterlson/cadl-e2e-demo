@@ -1,8 +1,8 @@
 import {
   createDecoratorDefinition,
   DecoratorContext,
-  InterfaceType,
-  NamespaceType,
+  Interface,
+  Namespace,
 } from "@cadl-lang/compiler";
 import { apiKeyKey, scopeKey } from "./lib.js";
 
@@ -14,7 +14,7 @@ const apiKeyDefinition = createDecoratorDefinition({
 
 export function $apiKey(
   ctx: DecoratorContext,
-  entity: NamespaceType | InterfaceType,
+  entity: Namespace | Interface,
   header: string
 ) {
   if (!apiKeyDefinition.validate(ctx, entity, [header])) return;
@@ -30,7 +30,7 @@ const scopeDefinition = createDecoratorDefinition({
 
 export function $scope(
   ctx: DecoratorContext,
-  target: NamespaceType | InterfaceType,
+  target: Namespace | Interface,
   name: string
 ) {
   if (!scopeDefinition.validate(ctx, target, [name])) return;

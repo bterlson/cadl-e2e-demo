@@ -1,20 +1,21 @@
 import {
-  InterfaceType,
-  NamespaceType,
-  OperationType,
+  Interface,
+  Namespace,
+  Operation,
   Program,
 } from "@cadl-lang/compiler";
 import {
-  getAllRoutes,
+  getAllHttpServices,
   OperationContainer,
-  OperationDetails,
+  HttpOperation,
 } from "@cadl-lang/rest/http";
 
 export function getRestOperationDefinition(
   program: Program,
-  operation: OperationType
-): OperationDetails {
-  const [routes, _diagnostics] = getAllRoutes(program);
+  operation: Operation
+): HttpOperation {
+  const [services, _diagnostics] = getAllHttpServices(program);
+  const routes = services[0].operations;
   const [info] = routes.filter((r) => r.operation === operation);
   if (!info) {
     throw new Error("No route for operation.");
@@ -25,7 +26,8 @@ export function getRestOperationDefinition(
 export function getRestOperationsWithin(
   program: Program,
   scope: OperationContainer
-): OperationDetails[] {
-  const [routes, _diagnostics] = getAllRoutes(program);
+): HttpOperation[] {
+  const [services, _diagnostics] = getAllHttpServices(program);
+  const routes = services[0].operations;
   return routes.filter((r) => r.container === scope);
 }

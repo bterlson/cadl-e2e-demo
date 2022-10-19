@@ -3,21 +3,20 @@ import url from "url";
 import path from "path";
 import {
   createDecoratorDefinition,
-  createProgram,
+  compile,
   DecoratorContext,
   formatDiagnostic,
-  InterfaceType,
-  NamespaceType,
+  Interface,
+  Namespace,
   NodeHost,
-  OperationType,
+  Operation,
   Program,
   Type,
 } from "@cadl-lang/compiler";
 import { getRestOperationDefinition } from "./rest.js";
 import { writeClientFile, writeOperationFile } from "./write.js";
-import { OperationDetails } from "@cadl-lang/rest/http";
+import { HttpOperation } from "@cadl-lang/rest/http";
 import { BICEPS } from "./biceps.js";
-import { Interface } from "readline";
 
 const SCHEMA_DIR = path.join(
   path.dirname(url.fileURLToPath(import.meta.url)),
@@ -38,8 +37,8 @@ const useDefinition = createDecoratorDefinition({
 
 const $_use = Symbol("cadl-use::use");
 
-type UseScope = NamespaceType | InterfaceType;
-type UseSelector = string | NamespaceType | OperationType | InterfaceType;
+type UseScope = Namespace | Interface;
+type UseSelector = string | Namespace | Operation | Interface;
 
 export async function $use(
   context: DecoratorContext,
@@ -62,8 +61,8 @@ export async function $use(
 
 export function getUses(
   program: Program,
-  t: NamespaceType | InterfaceType
-): OperationDetails[] {
+  t: Namespace | Interface
+): HttpOperation[] {
   return program.stateMap($_use).get(t) ?? [];
 }
 
@@ -146,7 +145,7 @@ async function resolveSelector(
     // Biceps
     BICEPS[selectedSchema[1]]?.();
 
-    program = await createProgram(NodeHost, schemaFilePath, {
+    program = await compile(NodeHost, schemaFilePath, {
       noEmit: true,
     });
 
@@ -196,7 +195,7 @@ interface UseResolution {
   name: string;
   ns: string;
   program: Program;
-  type: OperationType | InterfaceType | NamespaceType;
+  type: Operation | Interface | Namespace;
 }
 
 export async function main(args: string[]): Promise<void> {
@@ -220,7 +219,7 @@ export async function main(args: string[]): Promise<void> {
 
   console.error("Compiling schemas...");
 
-  const program = await createProgram(NodeHost, schemaFilePath, {
+  const program = await compile(NodeHost, schemaFilePath, {
     noEmit: true,
   });
 
@@ -258,7 +257,7 @@ export async function main(args: string[]): Promise<void> {
     process.exit(1);
   }
 
-  const [operation] = wantedOperations as OperationType[];
+  const [operation] = wantedOperations as Operation[];
 
   if (wantedOperations.length > 1) {
     console.warn(
@@ -292,7 +291,7 @@ function select(t: Type | undefined, selector: string[]): Type | undefined {
       throw new Error(`Cannot select into '${first}' of ${t.kind}`);
   }
 
-  function getNamespaceChild(t: NamespaceType, s: string): Type | undefined {
+  function getNamespaceChild(t: Namespace, s: string): Type | undefined {
     return t.namespaces.get(s) ?? t.interfaces.get(s) ?? t.operations.get(s);
   }
 }

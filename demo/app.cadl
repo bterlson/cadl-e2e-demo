@@ -6,7 +6,7 @@ import "cadl-azure-functions";
 
 using Cadl.Http;
 
-@serviceTitle("Demo")
+@service({title: "Demo"})
 namespace DemoApp;
 
 @store("dbName")
@@ -26,17 +26,19 @@ model CommentRequest {
   ... Comment
 };
 
+model Ok<T> {
+  ... OkResponse;
+  ... Body<T>;
+}
+
 @AzureFunction
-@use("Microsoft.KeyVault.Secrets.getSecret")
-@use("Azure.AI.TextAnalytics.Sentiment.analyzeSentiment")
 @route("/comments")
 interface Comments {
-  @post op createComment(@body comment: CommentRequest): OkResponse<Comment>;
-  @get op getComment(@path id: string): OkResponse<Comment>;
-  @get op listComments(): OkResponse<Comment[]>;
+  @get op getComment(@path id: string): Ok<Comment>;
+  @get op listComments(): Ok<Comment[]>;
+  @post op createComment(@body comment: CommentRequest): Ok<Comment>;
 }
 
 @AzureStaticWebApp
 @use(Comments)
 interface Static { }
-

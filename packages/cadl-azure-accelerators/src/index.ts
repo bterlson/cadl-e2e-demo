@@ -1,7 +1,7 @@
 import {
   createDecoratorDefinition,
   DecoratorContext,
-  NamespaceType,
+  Namespace,
   Program,
 } from "@cadl-lang/compiler";
 import path from "path";

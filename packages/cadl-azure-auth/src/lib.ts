@@ -1,8 +1,8 @@
 import {
   createCadlLibrary,
-  InterfaceType,
-  NamespaceType,
-  OperationType,
+  Interface,
+  Namespace,
+  Operation,
   Program,
 } from "@cadl-lang/compiler";
 
@@ -24,11 +24,11 @@ export interface SecurityDefinition {
 
 export function resolveSecurity(
   program: Program,
-  operation: OperationType
+  operation: Operation
 ): SecurityDefinition {
   let scopes: string | undefined, keyHeader: string | undefined;
 
-  (function backtrack(item: NamespaceType | InterfaceType | undefined) {
+  (function backtrack(item: Namespace | Interface | undefined) {
     if (!item) return;
 
     scopes ??= program.stateMap(scopeKey).get(item) as string;
