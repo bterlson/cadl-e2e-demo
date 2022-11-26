@@ -1,6 +1,7 @@
 import "@cadl-lang/rest";
 import "cadl-data-store";
 import "cadl-azure-static-web-app";
+import "cadl-use";
 import "cadl-azure-functions";
 
 using Cadl.Http;
@@ -39,4 +40,5 @@ interface Comments {
 }
 
 @AzureStaticWebApp
+@use(Comments)
 interface Static { }
