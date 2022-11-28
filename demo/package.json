@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "cadl compile app.cadl && node scripts/smoke.js",
+    "build": "cadl compile app.cadl && node scripts/smoke.js && tsc -p ./src/api",
     "watch": "chokidar \"./app.cadl\" -c \"npm run --silent build\""
   },
   "keywords": [],

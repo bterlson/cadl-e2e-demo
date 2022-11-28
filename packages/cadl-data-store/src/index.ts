@@ -13,7 +13,7 @@ import {
 import { DataStoreLibrary } from "./lib.js";
 import { mkdir, writeFile } from "fs/promises";
 import { format } from "prettier";
-import { addBicepFile, addSecret } from "cadl-azure-accelerators";
+import { addBicepFile, addEnvVar, addSecret } from "cadl-azure-accelerators";
 
 import * as path from "path";
 
@@ -96,6 +96,12 @@ export async function $onEmit(
   output cosmosConnectionStringValue string = cosmos.listConnectionStrings().connectionStrings[0].connectionString
 `)
   addSecret("cosmosConnectionString", "cosmosConnectionStringValue", ["cosmos"]);
+  addEnvVar({
+    name: "cosmosConnectionStringValue",
+    source: "bicepOutput",
+    value: "cosmosConnectionStringValue",
+    moduleName: "cosmos",
+  });
 }
 
 const instrinsicNameToTSType = new Map<string, string>([
