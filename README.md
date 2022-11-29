@@ -12,7 +12,7 @@ directory.
 
 #### Install Node & NPM
 
-Downlaod and install from https://nodejs.org.
+Download and install from https://nodejs.org.
 
 #### Install az cli
 
